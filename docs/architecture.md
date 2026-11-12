@@ -30,7 +30,7 @@ flowchart LR
 | Backend API | Node.js 22, Express 5, TypeScript, Zod | `backend/` |
 | Données     | PostgreSQL 16 (Docker)          | `docker-compose.yml` |
 | Tests       | Vitest, Supertest               | `backend/tests/` |
-| CI          | GitHub Actions                  | `.github/workflows/` |
+| CI          | GitHub Actions (modèle à activer) | `ci/github-actions-ci.yml` |
 
 Le dépôt est un **monorepo** : un seul dépôt Git, deux applications indépendantes (chacune avec son `package.json`).
 
@@ -56,7 +56,7 @@ Mecanico/
 │       └── main.tsx
 ├── docs/
 ├── docker-compose.yml
-└── .github/workflows/ci.yml
+└── ci/github-actions-ci.yml   # Workflow CI à copier dans .github/workflows/
 ```
 
 ## 4. Backend : architecture en couches par module
