@@ -1,0 +1,48 @@
+classDiagram
+  class AppUser {
+    UUID id
+    String keycloakId
+    String fullName
+    String email
+    String phone
+    UserRole role
+    AvailabilityStatus availabilityStatus
+    boolean active
+    LocalDateTime createdAt
+    registerUser()
+    updateAvailability(status)
+    getVehicles()
+  }
+  class Fleet {
+    UUID id
+    String fleetName
+    String companyName
+    LocalDateTime createdAt
+    addVehicle(v)
+    getTotalVehicles()
+  }
+  class Vehicle {
+    UUID id
+    String vin
+    String licensePlate
+    String brand
+    String model
+    int year
+    int currentMileage
+    FuelType fuelType
+    updateMileage(newMileage)
+    addMaintenanceRecord(log)
+  }
+  class MaintenanceLog {
+    UUID id
+    LocalDate serviceDate
+    long mileageAtService
+    ServiceType serviceType
+    String description
+    BigDecimal costTnd
+    UUID sourceRequestId
+  }
+  AppUser "1" --> "0..*" Vehicle : possède (driverId)
+  AppUser "1" --> "0..1" Fleet : gère (managerId)
+  Fleet "0..1" o-- "0..*" Vehicle : regroupe (fleetId)
+  Vehicle "1" *-- "0..*" MaintenanceLog : contient (vehicleId)

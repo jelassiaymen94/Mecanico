@@ -1,65 +1,50 @@
 # Mecanico
 
-Projet universitaire : application web de gestion d'atelier mécanique (clients, véhicules,
-rendez-vous, interventions, factures).
+Plateforme de mise en relation entre conducteurs, flottes d'entreprise et prestataires d'entretien et de dépannage automobile.
 
-📐 L'architecture est décrite dans [`docs/architecture.md`](docs/architecture.md).
+> Module AWD – Année universitaire 2026-2027 – Mini-projet (Validation 1)
 
-## Stack
+## Équipe
+| Étudiant | Microservice |
+|---|---|
+| [Nom Prénom] | MS1 – Auth, Fleet & Vehicle Service |
+| [Nom Prénom] | MS2 – [à compléter] |
+| [Nom Prénom] | MS3 – [à compléter] |
+| [Nom Prénom] | MS4 – [à compléter] |
+| [Nom Prénom] | MS5 – [à compléter] |
 
-- **Backend** : Node.js 22, Express 5, TypeScript, Zod — `backend/`
-- **Frontend** : React 19, Vite, TypeScript — `frontend/`
-- **Base de données** : PostgreSQL 16 (Docker)
-- **Tests** : Vitest + Supertest
-- **CI** : GitHub Actions — le workflow est fourni dans `ci/github-actions-ci.yml` ; pour l'activer, le copier dans `.github/workflows/ci.yml`
+## Sujet
+[À compléter : problème réel, acteurs (conducteur, prestataire, gestionnaire de flotte, administrateur), principales fonctionnalités.]
 
-## Démarrage rapide
+## Architecture
+Front-end, API Gateway, Eureka, Config Server, Keycloak, microservices (une base de données par service), Docker.
+Diagramme d'architecture : `Documentation/Diagrams/`.
 
-Prérequis : Node.js ≥ 22.12, npm, (optionnel) Docker.
-
-```bash
-cp .env.example .env
-
-# Backend (http://localhost:3000/api)
-cd backend
-npm install
-npm run dev
-
-# Frontend (http://localhost:5173) – dans un autre terminal
-cd frontend
-npm install
-npm run dev
+## Structure du dépôt
+```
+Mecanico/
+├── Backend/          un projet par microservice
+├── Frontend/
+├── Documentation/
+│   ├── Presentation/
+│   ├── Diagrams/
+│   └── MS1-auth-fleet-vehicle.md
+└── README.md
 ```
 
-### Avec Docker
+## Microservices
+### MS1 – Auth, Fleet & Vehicle Service
+- Port 8081 · MySQL (`mecanico_user_fleet_db`) · Keycloak (JWT)
+- Lancement :
+  ```bash
+  cd Backend/auth-fleet-vehicle-service
+  docker compose up -d
+  ./mvnw spring-boot:run
+  ```
+- Documentation : `Documentation/MS1-auth-fleet-vehicle.md`
 
-```bash
-docker compose up --build
-# Frontend : http://localhost:8080 — API : http://localhost:3000/api
-```
+### MS2 à MS5
+[À compléter par les autres membres.]
 
-## Scripts utiles
-
-| Dossier    | Commande            | Description                  |
-|------------|---------------------|------------------------------|
-| `backend`  | `npm run dev`       | Serveur avec rechargement    |
-| `backend`  | `npm test`          | Tests unitaires et d'API     |
-| `backend`  | `npm run build`     | Compilation TypeScript       |
-| `frontend` | `npm run dev`       | Serveur de développement     |
-| `frontend` | `npm run build`     | Build de production          |
-
-## Endpoints disponibles
-
-| Méthode | URL                    | Description              |
-|---------|------------------------|--------------------------|
-| GET     | `/api/health`          | État du service          |
-| GET     | `/api/vehicles`        | Liste des véhicules      |
-| GET     | `/api/vehicles/:id`    | Détail d'un véhicule     |
-| POST    | `/api/vehicles`        | Création                 |
-| PUT     | `/api/vehicles/:id`    | Mise à jour              |
-| DELETE  | `/api/vehicles/:id`    | Suppression              |
-
-## Ajouter un module métier
-
-Copier la structure de `backend/src/modules/vehicles/` (entity → repository → service → controller → routes),
-puis l'enregistrer dans `backend/src/app.ts`. Voir la section 4 de la documentation d'architecture.
+## Lancement global
+[À compléter : docker compose d'infrastructure (Keycloak, broker, bases de données).]

@@ -1,0 +1,16 @@
+services:
+  mysql-ms1:
+    image: mysql:8.4
+    container_name: mysql-ms1
+    environment:
+      MYSQL_DATABASE: mecanico_user_fleet_db
+      MYSQL_USER: ms1
+      MYSQL_PASSWORD: ms1pass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - ms1-data:/var/lib/mysql
+
+volumes:
+  ms1-data:

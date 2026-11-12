@@ -1,0 +1,24 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-fleet-vehicle-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/mecanico_user_fleet_db
+    username: ${DB_USER:ms1}
+    password: ${DB_PASSWORD:ms1pass}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+eureka:
+  client:
+    enabled: false   # passer à true quand Eureka est lancé
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
