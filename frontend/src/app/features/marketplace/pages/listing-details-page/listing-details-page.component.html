@@ -1,0 +1,218 @@
+<section class="details-page">
+  <div class="container narrow">
+    <a class="back-link" routerLink="/marketplace">← Retour au marketplace</a>
+
+    @if (loading()) {
+      <div class="card loading-card">
+        <span class="spinner" aria-hidden="true"></span>
+        Chargement de l’annonce...
+      </div>
+    } @else if (!listing()) {
+      <div class="card empty-state">
+        <span class="empty-icon" aria-hidden="true">🔎</span>
+        <h1>Annonce introuvable</h1>
+        <p>{{ error() || 'Cette annonce n’existe pas ou a été supprimée.' }}</p>
+        <a class="btn btn-primary" routerLink="/marketplace">Revenir au marketplace</a>
+      </div>
+    } @else {
+      @let item = listing()!;
+
+      <header class="details-header">
+        <div class="title-block">
+          <span class="eyebrow">{{ categoryLabel() }}</span>
+          <h1>{{ item.title }}</h1>
+          <div class="meta">
+            <app-status-badge [status]="item.status" />
+            <span>{{ item.city }}</span>
+            <span class="dot">·</span>
+            <span>Publié le {{ item.createdAt | date: 'dd MMM yyyy' }}</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <a class="btn btn-secondary" [routerLink]="['/marketplace', item.id, 'edit']">Modifier</a>
+          <button class="btn btn-danger" type="button" (click)="deleteListing()" [disabled]="deleting()">
+            {{ deleting() ? 'Suppression...' : 'Supprimer' }}
+          </button>
+        </div>
+      </header>
+
+      @if (error()) {
+        <div class="alert alert-error" role="alert">{{ error() }}</div>
+      }
+
+      <div class="details-layout">
+        <div class="details-main">
+          <section class="card content-card">
+            <h2>Description</h2>
+            <p class="description">{{ item.description }}</p>
+          </section>
+
+          <section class="card content-card">
+            <h2>Caractéristiques</h2>
+            <dl class="specs-grid">
+              <div>
+                <dt>Catégorie</dt>
+                <dd>{{ categoryLabel() }}</dd>
+              </div>
+              <div>
+                <dt>État</dt>
+                <dd>{{ conditionLabel() }}</dd>
+              </div>
+              <div>
+                <dt>Marque</dt>
+                <dd>{{ item.brand || 'Non précisée' }}</dd>
+              </div>
+              <div>
+                <dt>Modèles compatibles</dt>
+                <dd>{{ item.compatibleModels || 'Non précisés' }}</dd>
+              </div>
+              <div>
+                <dt>Quantité</dt>
+                <dd>{{ item.quantity }} disponible(s)</dd>
+              </div>
+              <div>
+                <dt>Référence</dt>
+                <dd>#{{ item.id }}</dd>
+              </div>
+              <div>
+                <dt>Vendeur</dt>
+                <dd>{{ item.sellerId }}</dd>
+              </div>
+              <div>
+                <dt>Dernière mise à jour</dt>
+                <dd>{{ item.updatedAt | date: 'dd MMM yyyy, HH:mm' }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="card verification-card" [class.is-pending]="isStatus('PENDING_VERIFICATION')">
+            <div class="verification-icon" aria-hidden="true">
+              {{ isStatus('VERIFIED') ? '✓' : isStatus('REJECTED') ? '✕' : '⏳' }}
+            </div>
+            <div>
+              <h2>
+                @if (isStatus('VERIFIED')) {
+                  Annonce vérifiée
+                } @else if (isStatus('REJECTED')) {
+                  Annonce refusée
+                } @else if (isStatus('SOLD')) {
+                  Annonce vendue
+                } @else {
+                  Vérification en attente
+                }
+              </h2>
+              <p>
+                @if (isStatus('VERIFIED')) {
+                  Cette annonce a été validée. Le workflow de vérification sera branché plus tard.
+                } @else if (isStatus('REJECTED')) {
+                  Cette annonce a été refusée. Aucune commande ne peut être passée.
+                } @else if (isStatus('SOLD')) {
+                  Cette annonce est marquée comme vendue.
+                } @else {
+                  Le statut est encore <strong>PENDING_VERIFICATION</strong>. Aucun contrôle de
+                  vérification n’est exécuté par le backend pour le moment.
+                }
+              </p>
+            </div>
+          </section>
+        </div>
+
+        <aside class="details-side">
+          <section class="card price-card">
+            <span class="price-label">Prix unitaire</span>
+            <div class="price">{{ item.price | number: '1.0-2' }} <small>TND</small></div>
+            <div class="stock-line">
+              <span>Stock</span>
+              <strong>{{ item.quantity }} unité(s)</strong>
+            </div>
+            @if (canOrder()) {
+              <a class="btn btn-primary full-width" href="#order-form">Commander cette pièce</a>
+            } @else {
+              <p class="unavailable">Commande indisponible pour cette annonce.</p>
+            }
+          </section>
+
+          <section class="card order-card" id="order-form">
+            <div class="order-heading">
+              <h2>Passer une commande</h2>
+              <span class="order-badge">API marketplace</span>
+            </div>
+
+            @if (createdOrder(); as order) {
+              <div class="order-success" role="status">
+                <span class="success-icon" aria-hidden="true">✓</span>
+                <div>
+                  <strong>Commande #{{ order.id }} créée</strong>
+                  <p>
+                    {{ order.quantity }} pièce(s) · {{ order.totalPrice | number: '1.0-2' }} TND ·
+                    statut {{ order.status }}
+                  </p>
+                </div>
+              </div>
+            }
+
+            @if (orderError()) {
+              <div class="alert alert-error compact-alert" role="alert">{{ orderError() }}</div>
+            }
+
+            <form [formGroup]="orderForm" (ngSubmit)="submitOrder()">
+              <label class="field">
+                <span>Identifiant acheteur</span>
+                <input formControlName="buyerId" placeholder="buyer-1" maxlength="64" />
+                @if (orderForm.controls.buyerId.touched && orderForm.controls.buyerId.invalid) {
+                  <small class="field-error">L’identifiant acheteur est obligatoire.</small>
+                }
+              </label>
+
+              <label class="field">
+                <span>Type d’acheteur</span>
+                <select formControlName="buyerType">
+                  @for (option of buyerTypeOptions; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Quantité</span>
+                <input type="number" formControlName="quantity" min="1" [max]="item.quantity" />
+                @if (orderForm.controls.quantity.touched && orderForm.controls.quantity.invalid) {
+                  <small class="field-error">
+                    Choisis une quantité entre 1 et {{ item.quantity }}.
+                  </small>
+                }
+              </label>
+
+              <div class="order-total">
+                <span>Total estimé</span>
+                <strong>
+                  {{ item.price * orderForm.controls.quantity.value | number: '1.0-2' }} TND
+                </strong>
+              </div>
+
+              <button class="btn btn-primary full-width" type="submit" [disabled]="orderSubmitting() || !canOrder()">
+                @if (orderSubmitting()) {
+                  <span class="spinner light" aria-hidden="true"></span>
+                }
+                Confirmer la commande
+              </button>
+              <p class="order-hint">
+                Le prix total est recalculé côté serveur. Le stock n’est pas encore décrémenté.
+              </p>
+            </form>
+          </section>
+
+          <section class="card seller-card">
+            <span class="seller-avatar" aria-hidden="true">{{ item.sellerId.slice(0, 2).toUpperCase() }}</span>
+            <div>
+              <span class="seller-label">Vendeur</span>
+              <strong>{{ item.sellerId }}</strong>
+              <p>Identifiant fourni dans la requête, sans authentification pour l’instant.</p>
+            </div>
+          </section>
+        </aside>
+      </div>
+    }
+  </div>
+</section>

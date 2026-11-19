@@ -1,0 +1,202 @@
+<section class="dispatch-page">
+  <div class="container">
+    <header class="page-hero">
+      <div class="hero-copy">
+        <span class="eyebrow">Dépannage & suivi</span>
+        <h1>Une panne ? Un dépanneur arrive.</h1>
+        <p>
+          Décris ton problème, choisis un prestataire et suis son trajet en direct sur la carte.
+          Les dépanneurs et les positions sont simulés pour cette démo.
+        </p>
+      </div>
+      <span class="demo-pill"><span class="live-dot"></span> Mode démo</span>
+    </header>
+
+    <div class="dispatch-layout">
+      <div class="left-column">
+        <app-dispatch-request-form (requestSubmitted)="handleRequest($event)" />
+
+        @if (error()) {
+          <div class="alert alert-error" role="alert">{{ error() }}</div>
+        }
+
+        @if (phase() === 'searching') {
+          <div class="card searching-card" role="status">
+            <span class="spinner" aria-hidden="true"></span>
+            <div>
+              <strong>Recherche de dépanneurs autour de vous...</strong>
+              <p>Les positions simulées sont en cours de chargement.</p>
+            </div>
+          </div>
+        }
+
+        @if (phase() === 'providers') {
+          <section class="results-section">
+            <div class="results-heading">
+              <div>
+                <span class="eyebrow">Résultats</span>
+                <h2>{{ providers().length }} dépanneurs disponibles</h2>
+              </div>
+              <button class="btn btn-ghost" type="button" (click)="reset()">Nouvelle demande</button>
+            </div>
+
+            <div class="provider-list">
+              @for (provider of providers(); track provider.id) {
+                <app-provider-card
+                  [provider]="provider"
+                  [selected]="selectedProvider()?.id === provider.id"
+                  (select)="selectProvider($event)"
+                />
+              }
+            </div>
+
+            <div class="confirm-bar card">
+              @if (selectedProvider(); as selected) {
+                <div class="confirm-provider">
+                  <span class="confirm-avatar" aria-hidden="true">
+                    {{ selected.name.slice(0, 2).toUpperCase() }}
+                  </span>
+                  <div>
+                    <strong>{{ selected.name }}</strong>
+                    <span>
+                      {{ selected.distanceKm | number: '1.1-1' }} km ·
+                      {{ selected.etaMinutes }} min estimées
+                    </span>
+                  </div>
+                </div>
+                <button class="btn btn-primary" type="button" (click)="confirmProvider()">
+                  Confirmer l’assignation
+                </button>
+              } @else {
+                <p>Sélectionne un dépanneur sur la carte ou dans la liste pour lancer le suivi.</p>
+              }
+            </div>
+          </section>
+        }
+
+        @if (phase() === 'tracking' || phase() === 'arrived') {
+          <section class="card tracking-card">
+            <div class="tracking-heading">
+              <div>
+                <span class="eyebrow">Suivi en direct</span>
+                <h2>
+                  {{ phase() === 'arrived' ? 'Votre dépanneur est arrivé' : 'Votre dépanneur est en route' }}
+                </h2>
+              </div>
+              @if (assignedProvider(); as assigned) {
+                <span class="eta-badge">{{ assigned.etaMinutes }} min</span>
+              }
+            </div>
+
+            @if (assignedProvider(); as assigned) {
+              <div class="tracking-provider">
+                <span class="tracking-avatar" aria-hidden="true">
+                  {{ assigned.name.slice(0, 2).toUpperCase() }}
+                </span>
+                <div class="tracking-identity">
+                  <strong>{{ assigned.name }}</strong>
+                  <span>{{ assigned.vehicle }} · {{ assigned.phone }}</span>
+                </div>
+                <span class="live-status">
+                  <span class="live-dot"></span>
+                  {{ phase() === 'arrived' ? 'Sur place' : 'En direct' }}
+                </span>
+              </div>
+            }
+
+            <div class="progress-track" aria-hidden="true">
+              <span [style.width.%]="progress()"></span>
+            </div>
+            <div class="tracking-steps">
+              <span class="done">Assigné</span>
+              <span [class.done]="phase() === 'tracking' || phase() === 'arrived'">En route</span>
+              <span [class.done]="phase() === 'arrived'">Arrivé</span>
+            </div>
+
+            @if (phase() === 'arrived') {
+              <div class="arrived-banner" role="status">
+                <span aria-hidden="true">✓</span>
+                Le dépanneur est sur place. La prise en charge peut commencer.
+              </div>
+            }
+
+            <div class="tracking-actions">
+              @if (request(); as activeRequest) {
+                <span class="tracking-address">
+                  ◎ {{ activeRequest.pickup.label }} — {{ activeRequest.pickup.address }}
+                </span>
+              }
+              <button class="btn btn-secondary" type="button" (click)="reset()">Nouvelle demande</button>
+            </div>
+          </section>
+        }
+
+        @if (phase() === 'idle') {
+          <section class="steps-section">
+            <div class="steps-heading">
+              <span class="eyebrow">Comment ça marche</span>
+              <h2>Trois étapes, zéro stress.</h2>
+            </div>
+            <div class="steps-grid">
+              <article class="step-card card">
+                <span class="step-number">01</span>
+                <h3>Décris la panne</h3>
+                <p>Choisis le type d’assistance et le point de prise en charge.</p>
+              </article>
+              <article class="step-card card">
+                <span class="step-number">02</span>
+                <h3>Choisis un dépanneur</h3>
+                <p>Compare la distance, l’ETA et la note des prestataires disponibles.</p>
+              </article>
+              <article class="step-card card">
+                <span class="step-number">03</span>
+                <h3>Suis le trajet</h3>
+                <p>La carte affiche la position simulée du dépanneur jusqu’à vous.</p>
+              </article>
+            </div>
+          </section>
+        }
+      </div>
+
+      <aside class="map-column">
+        <div class="card map-card">
+          <div class="map-heading">
+            <div>
+              <span class="map-kicker">Carte en direct</span>
+              <strong>{{ phaseLabel() }}</strong>
+            </div>
+            @if (request()) {
+              <span class="map-service">{{ serviceLabel() }}</span>
+            }
+          </div>
+
+          <app-dispatch-map
+            [pickup]="pickup()"
+            [providers]="providers()"
+            [selectedProvider]="selectedProvider()"
+            [assignedProvider]="assignedProvider()"
+            [trackingPosition]="trackingPosition()"
+            (providerSelected)="selectProvider($event)"
+          />
+
+          <div class="map-footer">
+            @if (request(); as activeRequest) {
+              <span>◎ {{ activeRequest.pickup.label }}</span>
+            } @else {
+              <span>◎ Tunis et environs</span>
+            }
+            <span>{{ providers().length }} dépanneur(s) affiché(s)</span>
+          </div>
+        </div>
+
+        <div class="card demo-note">
+          <span class="demo-note-icon" aria-hidden="true">ⓘ</span>
+          <p>
+            <strong>Mode démo.</strong> Les dépanneurs, distances et déplacements sont générés côté
+            frontend. Le backend dispatch sera branché à l’étape suivante.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>

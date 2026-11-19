@@ -1,0 +1,28 @@
+<div class="site-shell">
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" routerLink="/marketplace" aria-label="Mecanico, retour au marketplace">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span class="brand-name">Mecanico<span class="brand-dot">.</span></span>
+      </a>
+
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a routerLink="/marketplace" routerLinkActive="active">Marketplace</a>
+        <a routerLink="/dispatch" routerLinkActive="active">Dépannage</a>
+      </nav>
+
+      <a class="btn btn-primary header-cta" routerLink="/marketplace/new">Publier une annonce</a>
+    </div>
+  </header>
+
+  <main>
+    <router-outlet />
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>Mecanico — marketplace &amp; assistance routière</span>
+      <span>Projet ESPRIT · Interface de démonstration</span>
+    </div>
+  </footer>
+</div>
