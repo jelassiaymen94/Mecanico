@@ -1,0 +1,144 @@
+.filter-bar {
+  padding: 1rem 1.1rem;
+}
+
+.vehicle-avatar {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 0.55rem;
+  background: var(--mc-brand-soft);
+  color: var(--mc-brand-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.vehicle-link {
+  display: block;
+  color: var(--mc-ink);
+  font-weight: 700;
+  font-size: 0.87rem;
+}
+
+.vehicle-link:hover {
+  color: var(--mc-brand-dark);
+}
+
+.vehicle-sub {
+  display: block;
+  color: var(--mc-muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+.plate-chip {
+  display: inline-block;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.35rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.mono {
+  font-family: Consolas, 'SFMono-Regular', monospace;
+  letter-spacing: 0.01em;
+}
+
+.spec-line {
+  display: block;
+  font-size: 0.81rem;
+  font-weight: 600;
+}
+
+.health-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.health-inline .grade-text {
+  font-size: 1.05rem;
+}
+
+.health-grade-pill {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  border-radius: 999px;
+  padding: 0.15rem 0.4rem;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.health-grade-pill.excellent {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.health-grade-pill.good {
+  background: #f0fdfa;
+  color: var(--mc-brand-dark);
+}
+
+.health-grade-pill.fair {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.health-grade-pill.poor {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  border-top: 1px solid var(--mc-line);
+  background: #f8fafc;
+  border-radius: 0 0 var(--mc-radius) var(--mc-radius);
+}
+
+.pager-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pager-number {
+  border: 1px solid var(--mc-line);
+  background: #ffffff;
+  color: var(--mc-ink);
+  min-width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.pager-number:hover {
+  border-color: var(--mc-brand-line);
+  color: var(--mc-brand-dark);
+}
+
+.pager-number.active {
+  background: var(--mc-brand);
+  border-color: var(--mc-brand);
+  color: #ffffff;
+}
+
+.btn-icon:disabled {
+  opacity: 0.45;
+}

@@ -1,48 +1,104 @@
 classDiagram
-  class AppUser {
-    UUID id
-    String keycloakId
-    String fullName
-    String email
-    String phone
-    UserRole role
-    AvailabilityStatus availabilityStatus
-    boolean active
-    LocalDateTime createdAt
-    registerUser()
-    updateAvailability(status)
-    getVehicles()
-  }
-  class Fleet {
-    UUID id
-    String fleetName
-    String companyName
-    LocalDateTime createdAt
-    addVehicle(v)
-    getTotalVehicles()
-  }
+  direction LR
+
   class Vehicle {
-    UUID id
+    Long id
+    Long ownerId
     String vin
-    String licensePlate
-    String brand
-    String model
-    int year
-    int currentMileage
+    String plate
+    String plateCountry
+    Integer year
+    Integer mileage
+    LocalDate registrationDate
+    String color
+    String nickname
+    VehicleType vehicleType
     FuelType fuelType
-    updateMileage(newMileage)
-    addMaintenanceRecord(log)
+    TransmissionType transmission
+    Integer engineCapacityCc
+    Integer powerHp
+    VehicleStatus status
+    String photoUrl
+    String notes
+    LocalDateTime createdAt
+    LocalDateTime updatedAt
   }
-  class MaintenanceLog {
-    UUID id
+
+  class VehicleBrand {
+    Long id
+    String name
+    String slug
+    String country
+    String logoUrl
+    boolean active
+  }
+
+  class VehicleModel {
+    Long id
+    String name
+    String slug
+    BodyType bodyType
+    Integer yearFrom
+    Integer yearTo
+    boolean active
+  }
+
+  class MaintenanceRecord {
+    Long id
+    RecordType type
     LocalDate serviceDate
-    long mileageAtService
-    ServiceType serviceType
+    Integer mileage
     String description
-    BigDecimal costTnd
-    UUID sourceRequestId
+    String providerName
+    BigDecimal cost
+    String currency
+    BigDecimal laborCost
+    BigDecimal partsCost
+    String partName
+    LocalDate nextDueDate
+    Integer nextDueMileage
+    LocalDateTime createdAt
   }
-  AppUser "1" --> "0..*" Vehicle : possède (driverId)
-  AppUser "1" --> "0..1" Fleet : gère (managerId)
-  Fleet "0..1" o-- "0..*" Vehicle : regroupe (fleetId)
-  Vehicle "1" *-- "0..*" MaintenanceLog : contient (vehicleId)
+
+  class VehicleDocument {
+    Long id
+    DocumentType type
+    String number
+    String issuer
+    LocalDate issueDate
+    LocalDate expiryDate
+    BigDecimal cost
+    boolean active
+    boolean notification30Sent
+    boolean notification7Sent
+  }
+
+  class ServiceReminder {
+    Long id
+    ReminderType type
+    String title
+    Integer mileageTrigger
+    Integer nextDueMileage
+    LocalDate expiryDate
+    ReminderStatus status
+    boolean notified
+    LocalDateTime lastNotifiedAt
+    LocalDateTime completedAt
+  }
+
+  class NotificationLog {
+    Long id
+    NotificationEventType eventType
+    String message
+    NotificationChannel channel
+    NotificationStatus status
+    LocalDateTime createdAt
+  }
+
+  Vehicle "1" --> "1" VehicleBrand : marque
+  Vehicle "1" --> "1" VehicleModel : modèle
+  Vehicle "1" *-- "0..*" MaintenanceRecord : carnet
+  Vehicle "1" *-- "0..*" VehicleDocument : documents
+  Vehicle "1" *-- "0..*" ServiceReminder : rappels
+  Vehicle "1" *-- "0..*" NotificationLog : notifications
+  VehicleBrand "1" o-- "0..*" VehicleModel : catalogue

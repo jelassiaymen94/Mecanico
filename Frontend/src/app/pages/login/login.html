@@ -1,0 +1,122 @@
+<div class="auth-shell">
+  <section class="auth-hero">
+    <div class="auth-brand">
+      <span class="auth-brand-mark"><i class="bi bi-car-front-fill"></i></span>
+      <span>Mecanico</span>
+    </div>
+
+    <div>
+      <span class="eyebrow" style="color: #5eead4">MS1 · Vehicle Passport</span>
+      <h1>Every vehicle deserves a complete story.</h1>
+      <p class="lead">
+        One living passport for maintenance history, administrative documents, mileage and
+        service reminders - with a deterministic health score that tells you what needs
+        attention next.
+      </p>
+
+      <div class="auth-features">
+        <div class="auth-feature">
+          <i class="bi bi-heart-pulse"></i>
+          <span>A transparent 0-100 health score, built from age, mileage, maintenance, documents and reminders.</span>
+        </div>
+        <div class="auth-feature">
+          <i class="bi bi-bell"></i>
+          <span>10,000 km service reminders and a daily document-expiry scan at 30 and 7 days.</span>
+        </div>
+        <div class="auth-feature">
+          <i class="bi bi-shield-check"></i>
+          <span>Identity is issued by the Users microservice - the same JWT unlocks this passport.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-hero-foot">Mecanico · Architecture Web Distribuée · 2026</div>
+  </section>
+
+  <section class="auth-panel">
+    <div class="auth-card">
+      <h2>Open the garage</h2>
+      <p class="auth-subtitle">Sign in with your Mecanico account to reach your vehicles.</p>
+
+      @if (error()) {
+        <div class="alert alert-danger py-2 px-3 small" role="alert">
+          <i class="bi bi-exclamation-circle me-1"></i>{{ error() }}
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="mb-3">
+          <label class="form-label" for="email">Email address</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-envelope"></i></span>
+            <input
+              id="email"
+              type="email"
+              class="form-control"
+              formControlName="email"
+              placeholder="you@mecanico.tn"
+              autocomplete="email"
+              [class.is-invalid]="form.controls.email.touched && form.controls.email.invalid"
+            />
+          </div>
+          @if (form.controls.email.touched && form.controls.email.invalid) {
+            <div class="text-danger small mt-1">Enter a valid email address.</div>
+          }
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
+            <input
+              id="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              class="form-control"
+              formControlName="password"
+              placeholder="Your password"
+              autocomplete="current-password"
+              [class.is-invalid]="form.controls.password.touched && form.controls.password.invalid"
+            />
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="showPassword.set(!showPassword())"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+            >
+              <i class="bi" [class]="showPassword() ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+          </div>
+          @if (form.controls.password.touched && form.controls.password.invalid) {
+            <div class="text-danger small mt-1">Password is required.</div>
+          }
+        </div>
+
+        <button type="submit" class="btn btn-brand w-100" [disabled]="loading()">
+          @if (loading()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+          }
+          Sign in
+        </button>
+      </form>
+
+      <div class="auth-switch">
+        Accounts are managed by the Users service.
+        <a [href]="usersPortalUrl" target="_blank" rel="noopener">Open the Users portal</a>
+      </div>
+
+      <div class="demo-accounts">
+        <div class="demo-title">Demo accounts · password Password123!</div>
+        <div class="row g-2">
+          @for (account of demoAccounts; track account.email) {
+            <div class="col-12 col-sm-6">
+              <button type="button" class="demo-chip" (click)="useDemo(account)">
+                <span>{{ account.label }}</span>
+                <span>{{ account.role }}</span>
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

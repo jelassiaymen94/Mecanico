@@ -1,0 +1,192 @@
+<div class="page-header">
+  <div>
+    <span class="eyebrow">{{ roleLabel() }} workspace</span>
+    <h1>Garage overview</h1>
+    <p>Health, documents and service reminders across your fleet.</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    @if (auth.isAdmin()) {
+      <button type="button" class="btn btn-soft" [disabled]="scanning()" (click)="scan()">
+        @if (scanning()) {
+          <span class="spinner-border spinner-border-sm me-1"></span>
+        } @else {
+          <i class="bi bi-arrow-repeat me-1"></i>
+        }
+        Run expiry scan
+      </button>
+    }
+    <a routerLink="/vehicles" class="btn btn-soft"><i class="bi bi-car-front me-1"></i> All vehicles</a>
+    <a routerLink="/vehicles/new" class="btn btn-brand"><i class="bi bi-plus-lg me-1"></i> Register vehicle</a>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="surface">
+    <div class="surface-body text-center py-5 text-muted-app">
+      <span class="spinner-border text-success me-2"></span> Loading the garage…
+    </div>
+  </div>
+} @else if (error()) {
+  <div class="alert alert-danger d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <span><i class="bi bi-exclamation-triangle me-1"></i>{{ error() }}</span>
+    <button type="button" class="btn btn-sm btn-outline-danger" (click)="load()">Retry</button>
+  </div>
+} @else if (summary(); as data) {
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="surface stat-card">
+        <div class="stat-head">
+          <span>Fleet size</span>
+          <span class="stat-icon teal"><i class="bi bi-car-front-fill"></i></span>
+        </div>
+        <div class="stat-value">{{ data.totalVehicles }}</div>
+        <div class="stat-foot">{{ data.activeVehicles }} active · {{ data.totalVehicles - data.activeVehicles }} other</div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="surface stat-card">
+        <div class="stat-head">
+          <span>Average health</span>
+          <span class="stat-icon green"><i class="bi bi-heart-pulse"></i></span>
+        </div>
+        <div class="stat-value">{{ data.averageHealthScore }}<small class="fs-6 text-muted-app">/100</small></div>
+        <div class="stat-foot">
+          <span [class]="'grade-text ' + averageGrade().toLowerCase()">{{ averageGrade() }}</span>
+          across the fleet
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="surface stat-card">
+        <div class="stat-head">
+          <span>Documents expiring</span>
+          <span class="stat-icon amber"><i class="bi bi-file-earmark-text"></i></span>
+        </div>
+        <div class="stat-value">{{ data.documentsExpiring }}</div>
+        <div class="stat-foot">
+          within 30 days
+          @if (data.documentsExpired > 0) {
+            · <span class="text-danger">{{ data.documentsExpired }} expired</span>
+          }
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="surface stat-card">
+        <div class="stat-head">
+          <span>Reminders due</span>
+          <span class="stat-icon red"><i class="bi bi-bell-fill"></i></span>
+        </div>
+        <div class="stat-value">{{ reminderCount() }}</div>
+        <div class="stat-foot">
+          @if (data.remindersOverdue > 0) {
+            <span class="text-danger">{{ data.remindersOverdue }} overdue</span>
+          } @else {
+            nothing overdue
+          }
+          · {{ data.remindersDue }} due soon
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-xl-8">
+      <div class="surface h-100">
+        <div class="surface-header">
+          <div>
+            <div class="section-title">Your vehicles</div>
+            <div class="text-muted-app small">Open a passport to see its full history and health breakdown.</div>
+          </div>
+          <a routerLink="/vehicles" class="btn btn-soft btn-sm">View all</a>
+        </div>
+        <div class="surface-body">
+          @if (data.vehicles.length === 0) {
+            <div class="empty-state">
+              <i class="bi bi-car-front"></i>
+              <strong class="d-block mb-1">No vehicles yet</strong>
+              Register your first vehicle to start its passport.
+              <div class="mt-3">
+                <a routerLink="/vehicles/new" class="btn btn-brand btn-sm">
+                  <i class="bi bi-plus-lg me-1"></i> Register a vehicle
+                </a>
+              </div>
+            </div>
+          } @else {
+            <div class="vehicle-grid">
+              @for (vehicle of data.vehicles; track vehicle.id) {
+                <a class="vehicle-tile" [routerLink]="['/vehicles', vehicle.id]">
+                  <div class="vehicle-tile-top">
+                    <span class="vehicle-icon"><i class="bi bi-car-front-fill"></i></span>
+                    <span [class]="statusCss(vehicle)">{{ statusLabel(vehicle) }}</span>
+                  </div>
+                  <div class="vehicle-tile-body">
+                    <div class="vehicle-name">
+                      <strong>{{ vehicleTitle(vehicle) }}</strong>
+                      <small>{{ vehicle.brandName }} {{ vehicle.modelName }} · {{ vehicle.year }}</small>
+                    </div>
+                    <div [class]="healthCss(vehicle.healthScore)">
+                      <span class="health-number">{{ vehicle.healthScore }}</span>
+                      <span class="health-grade">{{ vehicle.healthGrade }}</span>
+                    </div>
+                  </div>
+                  <div class="vehicle-tile-foot">
+                    <span><i class="bi bi-upc-scan me-1"></i>{{ vehicle.plate }}</span>
+                    <span><i class="bi bi-speedometer2 me-1"></i>{{ formatKm(vehicle.mileage) }}</span>
+                  </div>
+                </a>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-4">
+      <div class="surface h-100 d-flex flex-column">
+        <div class="surface-header">
+          <div>
+            <div class="section-title">Attention needed</div>
+            <div class="text-muted-app small">{{ data.alerts.length }} alert(s) across the fleet.</div>
+          </div>
+          <span class="stat-icon amber"><i class="bi bi-exclamation-triangle"></i></span>
+        </div>
+        <div class="alert-feed">
+          @for (alert of data.alerts; track alert.type + alert.vehicleId + alert.title) {
+            <a class="alert-item" [routerLink]="['/vehicles', alert.vehicleId]">
+              <span class="alert-dot" [class]="'alert-dot ' + severityCss(alert.severity)"></span>
+              <span class="alert-body">
+                <span class="alert-title">
+                  <i [class]="'bi me-1 ' + alertIcon(alert.type)"></i>{{ alert.title }}
+                </span>
+                <span class="alert-text">{{ alert.message }}</span>
+                <span class="alert-meta">
+                  {{ alert.vehicleLabel }}
+                  @if (dueText(alert.dueDate, alert.mileage); as due) {
+                    · {{ due }}
+                  }
+                </span>
+              </span>
+              <i class="bi bi-chevron-right alert-arrow"></i>
+            </a>
+          } @empty {
+            <div class="empty-state py-4">
+              <i class="bi bi-check2-circle"></i>
+              <strong class="d-block mb-1">All clear</strong>
+              No document or reminder alerts right now.
+            </div>
+          }
+        </div>
+        <div class="spend-strip">
+          <div>
+            <span class="text-muted-app small">Maintenance spend</span>
+            <strong>{{ formatMoney(data.totalMaintenanceCost) }}</strong>
+          </div>
+          <a routerLink="/notifications" class="btn btn-soft btn-sm">
+            <i class="bi bi-bell me-1"></i> Notifications
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+}

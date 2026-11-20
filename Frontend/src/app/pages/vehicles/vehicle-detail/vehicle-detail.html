@@ -1,0 +1,876 @@
+@if (loading()) {
+  <div class="surface">
+    <div class="surface-body text-center py-5 text-muted-app">
+      <span class="spinner-border text-success me-2"></span> Loading the vehicle passport…
+    </div>
+  </div>
+} @else if (error()) {
+  <div class="alert alert-danger d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <span><i class="bi bi-exclamation-triangle me-1"></i>{{ error() }}</span>
+    <div class="d-flex gap-2">
+      <a routerLink="/vehicles" class="btn btn-sm btn-light">Back to vehicles</a>
+      <button type="button" class="btn btn-sm btn-outline-danger" (click)="load()">Retry</button>
+    </div>
+  </div>
+} @else if (passport(); as data) {
+  <div class="page-header">
+    <div>
+      <a routerLink="/vehicles" class="back-link"><i class="bi bi-arrow-left me-1"></i>Vehicles</a>
+      <h1>{{ vehicleTitle() }}</h1>
+      <p>{{ data.vehicle.brandName }} {{ data.vehicle.modelName }} · {{ data.vehicle.year }} · {{ data.vehicle.plate }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a [routerLink]="['/vehicles', data.vehicle.id, 'edit']" class="btn btn-soft">
+        <i class="bi bi-pencil me-1"></i> Edit
+      </a>
+      <button type="button" class="btn btn-danger-soft" (click)="askDeleteVehicle()">
+        <i class="bi bi-trash3 me-1"></i> Delete
+      </button>
+    </div>
+  </div>
+
+  <div class="surface vehicle-hero mb-3">
+    <div class="hero-visual">
+      @if (data.vehicle.photoUrl) {
+        <img [src]="data.vehicle.photoUrl" [alt]="vehicleTitle()" />
+      } @else {
+        <i class="bi bi-car-front-fill"></i>
+        <span class="hero-plate">{{ data.vehicle.plate }}</span>
+      }
+    </div>
+    <div class="hero-body">
+      <div class="hero-main">
+        <div>
+          <span [class]="statusCss()">{{ statusLabel() }}</span>
+          @if (data.vehicle.vehicleType) {
+            <span class="badge-soft badge-soft--neutral ms-1">{{ vehicleTypeLabels[data.vehicle.vehicleType] }}</span>
+          }
+          <div class="hero-name">{{ vehicleTitle() }}</div>
+          <div class="hero-sub">
+            {{ data.vehicle.brandName }} {{ data.vehicle.modelName }} · {{ fuelLabels[data.vehicle.fuelType] }}
+            @if (data.vehicle.transmission) {
+              · {{ transmissionLabels[data.vehicle.transmission] }}
+            }
+          </div>
+        </div>
+        <div class="hero-gauge">
+          <div class="gauge-ring" [style.background]="gaugeBackground()">
+            <div class="gauge-hole">
+              <strong>{{ data.health.score }}</strong>
+              <span>/100</span>
+            </div>
+          </div>
+          <div class="gauge-caption">
+            <span [class]="'grade-text ' + gradeClass(data.health.grade)">{{ data.health.grade }}</span>
+            <small>health score</small>
+          </div>
+        </div>
+      </div>
+      <div class="hero-facts">
+        <div>
+          <span>Plate</span>
+          <strong>{{ data.vehicle.plate }}</strong>
+        </div>
+        <div>
+          <span>Mileage</span>
+          <strong>{{ formatKm(data.vehicle.mileage) }}</strong>
+        </div>
+        <div>
+          <span>Owner</span>
+          <strong>{{ ownerLabel() }}</strong>
+        </div>
+        <div>
+          <span>Last service</span>
+          <strong>{{ data.stats.lastServiceDate ? formatDate(data.stats.lastServiceDate) : 'No record' }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-strip mb-3">
+    @for (tab of tabs(); track tab.id) {
+      <button type="button" [class.active]="activeTab() === tab.id" (click)="setTab(tab.id)">
+        <i [class]="'bi ' + tab.icon"></i>
+        {{ tab.label }}
+        @if (tab.count !== null) {
+          <span class="tab-count">{{ tab.count }}</span>
+        }
+      </button>
+    }
+  </div>
+
+  @switch (activeTab()) {
+    @case ('overview') {
+      <div class="overview-kpis mb-3">
+        <div class="surface mini-kpi">
+          <span class="stat-icon teal"><i class="bi bi-tools"></i></span>
+          <div>
+            <strong>{{ data.stats.recordCount }}</strong>
+            <span>maintenance record(s)</span>
+          </div>
+        </div>
+        <div class="surface mini-kpi">
+          <span class="stat-icon green"><i class="bi bi-cash-stack"></i></span>
+          <div>
+            <strong>{{ formatMoney(data.stats.totalMaintenanceCost) }}</strong>
+            <span>total maintenance spend</span>
+          </div>
+        </div>
+        <div class="surface mini-kpi">
+          <span class="stat-icon amber"><i class="bi bi-file-earmark-text"></i></span>
+          <div>
+            <strong>{{ data.stats.documentsTotal }}</strong>
+            <span>
+              document(s)
+              @if (data.stats.documentsExpiring + data.stats.documentsExpired > 0) {
+                · {{ data.stats.documentsExpiring }} expiring · {{ data.stats.documentsExpired }} expired
+              }
+            </span>
+          </div>
+        </div>
+        <div class="surface mini-kpi">
+          <span class="stat-icon red"><i class="bi bi-bell"></i></span>
+          <div>
+            <strong>{{ data.stats.remindersDue + data.stats.remindersOverdue }}</strong>
+            <span>{{ data.stats.remindersOverdue }} overdue · {{ data.stats.remindersDue }} due soon</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-8">
+          <div class="surface mb-3">
+            <div class="surface-header">
+              <div>
+                <div class="section-title">Passport identity</div>
+                <div class="text-muted-app small">The facts tied to this chassis.</div>
+              </div>
+              <span class="mono small text-muted-app">{{ data.vehicle.vin }}</span>
+            </div>
+            <div class="surface-body">
+              <dl class="detail-grid">
+                <div><dt>VIN</dt><dd class="mono">{{ data.vehicle.vin }}</dd></div>
+                <div><dt>Plate</dt><dd>{{ data.vehicle.plate }} ({{ data.vehicle.plateCountry ?? 'TN' }})</dd></div>
+                <div><dt>Brand / model</dt><dd>{{ data.vehicle.brandName }} {{ data.vehicle.modelName }}</dd></div>
+                <div><dt>Year</dt><dd>{{ data.vehicle.year }}</dd></div>
+                <div><dt>Registration</dt><dd>{{ formatDate(data.vehicle.registrationDate) }}</dd></div>
+                <div><dt>Color</dt><dd>{{ data.vehicle.color || '—' }}</dd></div>
+                <div><dt>Fuel</dt><dd>{{ fuelLabels[data.vehicle.fuelType] }}</dd></div>
+                <div><dt>Transmission</dt><dd>{{ data.vehicle.transmission ? transmissionLabels[data.vehicle.transmission] : '—' }}</dd></div>
+                <div><dt>Engine</dt><dd>{{ data.vehicle.engineCapacityCc ? data.vehicle.engineCapacityCc + ' cc' : '—' }}</dd></div>
+                <div><dt>Power</dt><dd>{{ data.vehicle.powerHp ? data.vehicle.powerHp + ' hp' : '—' }}</dd></div>
+                <div><dt>Owner</dt><dd>{{ ownerLabel() }}</dd></div>
+                <div><dt>Created</dt><dd>{{ formatDate(data.vehicle.createdAt) }}</dd></div>
+              </dl>
+              @if (data.vehicle.notes) {
+                <div class="notes-block">
+                  <i class="bi bi-journal-text me-1"></i>{{ data.vehicle.notes }}
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="surface">
+            <div class="surface-header">
+              <div>
+                <div class="section-title">Latest maintenance</div>
+                <div class="text-muted-app small">The three most recent interventions.</div>
+              </div>
+              <button type="button" class="btn btn-soft btn-sm" (click)="setTab('records')">View all</button>
+            </div>
+            <div class="surface-body">
+              @for (record of data.records.slice(0, 3); track record.id) {
+                <div class="mini-row">
+                  <span class="mini-icon"><i [class]="'bi ' + recordIcon(record.type)"></i></span>
+                  <div class="mini-body">
+                    <strong>{{ recordLabels[record.type] }} · {{ formatDate(record.serviceDate) }}</strong>
+                    <small>{{ record.description || record.providerName || 'No description' }}</small>
+                  </div>
+                  <span class="mini-amount">{{ formatMoney(record.cost, record.currency ?? 'TND') }}</span>
+                </div>
+              } @empty {
+                <div class="empty-state py-4">
+                  <i class="bi bi-tools"></i>
+                  No maintenance record yet.
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="surface mb-3">
+            <div class="surface-header">
+              <div>
+                <div class="section-title">Mileage</div>
+                <div class="text-muted-app small">Keep the odometer current for reminders.</div>
+              </div>
+            </div>
+            <div class="surface-body">
+              <div class="mileage-display">{{ formatKm(data.vehicle.mileage) }}</div>
+              @if (editingMileage()) {
+                <div class="d-flex gap-2 mt-2">
+                  <input
+                    #mileageField
+                    type="number"
+                    class="form-control"
+                    [value]="mileageInput()"
+                    min="0"
+                    (input)="mileageInput.set(+mileageField.value)"
+                  />
+                  <button type="button" class="btn btn-brand" [disabled]="savingMileage()" (click)="saveMileage()">
+                    @if (savingMileage()) {
+                      <span class="spinner-border spinner-border-sm"></span>
+                    } @else {
+                      <i class="bi bi-check2"></i>
+                    }
+                  </button>
+                  <button type="button" class="btn btn-light" (click)="cancelMileageEdit()">Cancel</button>
+                </div>
+              } @else {
+                <button type="button" class="btn btn-soft w-100 mt-2" (click)="startMileageEdit()">
+                  <i class="bi bi-arrow-up-circle me-1"></i> Update mileage
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="surface">
+            <div class="surface-header">
+              <div>
+                <div class="section-title">Next reminders</div>
+                <div class="text-muted-app small">Open service items for this vehicle.</div>
+              </div>
+              <button type="button" class="btn btn-soft btn-sm" (click)="setTab('reminders')">Manage</button>
+            </div>
+            <div class="surface-body">
+              @for (reminder of data.reminders.slice(0, 4); track reminder.id) {
+                <div class="mini-row">
+                  <span class="mini-icon"><i [class]="'bi ' + reminderIcon(reminder.type)"></i></span>
+                  <div class="mini-body">
+                    <strong>{{ reminder.title }}</strong>
+                    <small>
+                      @if (reminder.nextDueMileage) {
+                        {{ kmUntilText(reminder.kmUntilDue) }}
+                      } @else if (reminder.expiryDate) {
+                        {{ daysText(reminder.daysUntilExpiry) }}
+                      }
+                    </small>
+                  </div>
+                  <span [class]="reminderStatusCss(reminder.status)">{{ reminderStatusLabels[reminder.status] }}</span>
+                </div>
+              } @empty {
+                <div class="empty-state py-4">
+                  <i class="bi bi-bell-slash"></i>
+                  No reminder for this vehicle.
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    @case ('records') {
+      <div class="surface">
+        <div class="surface-header">
+          <div>
+            <div class="section-title">Maintenance history</div>
+            <div class="text-muted-app small">
+              {{ data.records.length }} record(s) · {{ formatMoney(data.stats.totalMaintenanceCost) }} total
+            </div>
+          </div>
+          <button type="button" class="btn btn-brand btn-sm" (click)="openRecordModal()">
+            <i class="bi bi-plus-lg me-1"></i> Add record
+          </button>
+        </div>
+        <div class="surface-body">
+          <div class="timeline">
+            @for (record of data.records; track record.id) {
+              <div class="timeline-item">
+                <span class="timeline-icon"><i [class]="'bi ' + recordIcon(record.type)"></i></span>
+                <div class="timeline-body">
+                  <div class="timeline-head">
+                    <div>
+                      <span [class]="typeBadge('record', record.type)">{{ recordLabels[record.type] }}</span>
+                      <strong class="ms-2">{{ formatDate(record.serviceDate) }}</strong>
+                      <span class="text-muted-app small ms-2">{{ formatKm(record.mileage) }}</span>
+                    </div>
+                    <div class="timeline-actions">
+                      <span class="amount-chip">{{ formatMoney(record.cost, record.currency ?? 'TND') }}</span>
+                      <button
+                        type="button"
+                        class="btn-icon danger"
+                        title="Delete record"
+                        (click)="askDeleteRecord(record.id, recordLabels[record.type], record.serviceDate)"
+                      >
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </div>
+                  </div>
+                  @if (record.description) {
+                    <p class="timeline-desc">{{ record.description }}</p>
+                  }
+                  <div class="timeline-meta">
+                    @if (record.providerName) {
+                      <span><i class="bi bi-building me-1"></i>{{ record.providerName }}</span>
+                    }
+                    @if (record.laborCost !== undefined) {
+                      <span><i class="bi bi-person-gear me-1"></i>Labour {{ formatMoney(record.laborCost, record.currency ?? 'TND') }}</span>
+                    }
+                    @if (record.partsCost !== undefined) {
+                      <span><i class="bi bi-box-seam me-1"></i>Parts {{ formatMoney(record.partsCost, record.currency ?? 'TND') }}</span>
+                    }
+                    @if (record.partName) {
+                      <span><i class="bi bi-gear me-1"></i>{{ record.partName }}</span>
+                    }
+                    @if (record.nextDueMileage) {
+                      <span><i class="bi bi-signpost-split me-1"></i>Next at {{ formatKm(record.nextDueMileage) }}</span>
+                    }
+                    @if (record.nextDueDate) {
+                      <span><i class="bi bi-calendar-event me-1"></i>Next on {{ formatDate(record.nextDueDate) }}</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-state">
+                <i class="bi bi-tools"></i>
+                <strong class="d-block mb-1">No maintenance record</strong>
+                Add the first service, repair or inspection to build the history.
+                <div class="mt-3">
+                  <button type="button" class="btn btn-brand btn-sm" (click)="openRecordModal()">
+                    <i class="bi bi-plus-lg me-1"></i> Add record
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="info-note mt-3">
+            <i class="bi bi-magic me-1"></i>
+            Adding a <strong>SERVICE</strong> record closes the open oil-change reminder and schedules the next one
+            10,000 km later.
+          </div>
+        </div>
+      </div>
+    }
+
+    @case ('documents') {
+      <div class="surface">
+        <div class="surface-header">
+          <div>
+            <div class="section-title">Administrative documents</div>
+            <div class="text-muted-app small">
+              {{ data.stats.documentsTotal }} document(s) · {{ data.stats.documentsExpiring }} expiring within 30 days
+            </div>
+          </div>
+          <button type="button" class="btn btn-brand btn-sm" (click)="openDocumentModal()">
+            <i class="bi bi-plus-lg me-1"></i> Add document
+          </button>
+        </div>
+        <div class="surface-body">
+          <div class="document-grid">
+            @for (document of data.documents; track document.id) {
+              <div class="document-card" [class.inactive]="!document.active">
+                <div class="document-head">
+                  <span class="document-icon"><i [class]="'bi ' + documentIcon(document.type)"></i></span>
+                  <div class="document-title">
+                    <span [class]="typeBadge('document', document.type)">{{ documentLabels[document.type] }}</span>
+                    <strong>{{ document.number || 'No number' }}</strong>
+                    <small>{{ document.issuer || 'Issuer not set' }}</small>
+                  </div>
+                  @if (!document.active) {
+                    <span class="badge-soft badge-soft--neutral">Inactive</span>
+                  } @else if (document.expired) {
+                    <span class="badge-soft badge-soft--critical">Expired</span>
+                  } @else if (document.expiringSoon) {
+                    <span class="badge-soft badge-soft--warning">Expires soon</span>
+                  } @else {
+                    <span class="badge-soft badge-soft--active">Valid</span>
+                  }
+                </div>
+                <div class="document-dates">
+                  <div>
+                    <span>Issued</span>
+                    <strong>{{ formatDate(document.issueDate) }}</strong>
+                  </div>
+                  <div>
+                    <span>Expires</span>
+                    <strong>{{ formatDate(document.expiryDate) }}</strong>
+                  </div>
+                  <div>
+                    <span>Remaining</span>
+                    <strong [class.text-danger]="document.expired">{{ daysText(document.daysUntilExpiry) }}</strong>
+                  </div>
+                </div>
+                @if (document.notes) {
+                  <p class="document-notes">{{ document.notes }}</p>
+                }
+                <div class="document-foot">
+                  <span class="amount-chip">{{ formatMoney(document.cost) }}</span>
+                  <div class="d-flex gap-1">
+                    <button type="button" class="btn-icon" title="Edit document" (click)="openDocumentModal(document)">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" class="btn-icon danger" title="Delete document" (click)="askDeleteDocument(document)">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-state">
+                <i class="bi bi-file-earmark-text"></i>
+                <strong class="d-block mb-1">No document stored</strong>
+                Add insurance, inspection, registration or vignette to monitor expiry dates.
+                <div class="mt-3">
+                  <button type="button" class="btn btn-brand btn-sm" (click)="openDocumentModal()">
+                    <i class="bi bi-plus-lg me-1"></i> Add document
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="info-note mt-3">
+            <i class="bi bi-bell me-1"></i>
+            A daily scan flags documents 30 days and 7 days before expiry and writes an in-app notification.
+          </div>
+        </div>
+      </div>
+    }
+
+    @case ('reminders') {
+      <div class="surface">
+        <div class="surface-header">
+          <div>
+            <div class="section-title">Service reminders</div>
+            <div class="text-muted-app small">
+              {{ data.reminders.length }} reminder(s) · {{ data.stats.remindersOverdue }} overdue ·
+              {{ data.stats.remindersDue }} due soon
+            </div>
+          </div>
+          <button type="button" class="btn btn-brand btn-sm" (click)="openReminderModal()">
+            <i class="bi bi-plus-lg me-1"></i> Add reminder
+          </button>
+        </div>
+        <div class="surface-body">
+          <div class="reminder-list">
+            @for (reminder of data.reminders; track reminder.id) {
+              <div class="reminder-card" [class.done]="reminder.status === 'COMPLETED' || reminder.status === 'DISMISSED'">
+                <span class="reminder-icon"><i [class]="'bi ' + reminderIcon(reminder.type)"></i></span>
+                <div class="reminder-body">
+                  <div class="reminder-head">
+                    <div>
+                      <strong>{{ reminder.title }}</strong>
+                      <span [class]="typeBadge('reminder', reminder.type)">{{ reminderLabels[reminder.type] }}</span>
+                      <span [class]="reminderStatusCss(reminder.status)">{{ reminderStatusLabels[reminder.status] }}</span>
+                    </div>
+                    <div class="d-flex gap-1">
+                      @if (reminder.status === 'COMPLETED' || reminder.status === 'DISMISSED') {
+                        <button type="button" class="btn btn-sm btn-soft" (click)="updateReminder(reminder, 'PENDING')">
+                          <i class="bi bi-arrow-counterclockwise me-1"></i> Reopen
+                        </button>
+                      } @else {
+                        <button type="button" class="btn btn-sm btn-soft" (click)="updateReminder(reminder, 'COMPLETED')">
+                          <i class="bi bi-check2 me-1"></i> Complete
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light" (click)="updateReminder(reminder, 'DISMISSED')">
+                          Dismiss
+                        </button>
+                      }
+                      <button type="button" class="btn-icon danger" title="Delete reminder" (click)="askDeleteReminder(reminder)">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="reminder-meta">
+                    @if (reminder.nextDueMileage) {
+                      <span class="meta-chip"><i class="bi bi-speedometer2 me-1"></i>Due at {{ formatKm(reminder.nextDueMileage) }}</span>
+                      <span class="meta-chip" [class.text-danger]="reminder.overdue">{{ kmUntilText(reminder.kmUntilDue) }}</span>
+                    }
+                    @if (reminder.expiryDate) {
+                      <span class="meta-chip"><i class="bi bi-calendar-event me-1"></i>Due {{ formatDate(reminder.expiryDate) }}</span>
+                      <span class="meta-chip" [class.text-danger]="reminder.overdue">{{ daysText(reminder.daysUntilExpiry) }}</span>
+                    }
+                    @if (reminder.lastNotifiedAt) {
+                      <span class="meta-chip"><i class="bi bi-bell me-1"></i>Notified {{ formatDate(reminder.lastNotifiedAt) }}</span>
+                    }
+                  </div>
+                  @if (reminder.notes) {
+                    <p class="reminder-notes">{{ reminder.notes }}</p>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-state">
+                <i class="bi bi-bell-slash"></i>
+                <strong class="d-block mb-1">No reminder yet</strong>
+                Add a mileage or date based reminder to stay ahead of maintenance.
+                <div class="mt-3">
+                  <button type="button" class="btn btn-brand btn-sm" (click)="openReminderModal()">
+                    <i class="bi bi-plus-lg me-1"></i> Add reminder
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    @case ('health') {
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="surface h-100">
+            <div class="surface-body text-center">
+              <div class="gauge-ring gauge-large mx-auto" [style.background]="gaugeBackground()">
+                <div class="gauge-hole">
+                  <strong>{{ data.health.score }}</strong>
+                  <span>/100</span>
+                </div>
+              </div>
+              <div [class]="'grade-text fs-5 mt-3 ' + gradeClass(data.health.grade)">{{ data.health.grade }}</div>
+              <p class="text-muted-app small mb-0 mt-1">{{ data.health.summary }}</p>
+              <div class="health-meta mt-3">
+                <span>Updated live</span>
+                <span>{{ data.vehicle.vin }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-8">
+          <div class="surface h-100">
+            <div class="surface-header">
+              <div>
+                <div class="section-title">Score breakdown</div>
+                <div class="text-muted-app small">100 points minus the penalties below.</div>
+              </div>
+              <span class="badge-soft badge-soft--neutral">Deterministic · no AI</span>
+            </div>
+            <div class="surface-body">
+              @for (row of breakdown(); track row.key) {
+                <div class="breakdown-row">
+                  <div class="breakdown-head">
+                    <span><i [class]="'bi ' + row.icon + ' me-1'"></i>{{ row.label }}</span>
+                    <span class="text-muted-app small">{{ row.penalty }} / {{ row.max }} pts</span>
+                  </div>
+                  <div class="bar-track">
+                    <div class="bar-fill" [class.warn]="row.penalty > 0" [style.width.%]="row.percent"></div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="surface">
+            <div class="surface-header">
+              <div>
+                <div class="section-title">Health factors</div>
+                <div class="text-muted-app small">Each rule explains the points it deducted.</div>
+              </div>
+            </div>
+            <div class="surface-body">
+              <div class="factor-list">
+                @for (factor of data.health.factors; track factor.code) {
+                  <div class="factor-row">
+                    <span [class]="'badge-soft badge-soft--' + factor.status.toLowerCase()">{{ factor.status }}</span>
+                    <div class="factor-body">
+                      <strong>{{ factor.label }}</strong>
+                      <small>{{ factor.detail }}</small>
+                    </div>
+                    <span class="factor-penalty" [class.zero]="factor.penalty === 0">
+                      {{ factor.penalty === 0 ? 'No deduction' : '−' + factor.penalty + ' pts' }}
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Delete vehicle ------------------------------------------------------- -->
+  @if (deleteVehicleOpen()) {
+    <div class="modal-backdrop-app" (click)="deleteVehicleOpen.set(false)">
+      <div class="modal-card modal-narrow" (click)="$event.stopPropagation()">
+        <div class="modal-card-header">
+          <h3><i class="bi bi-exclamation-triangle text-danger me-2"></i>Delete vehicle</h3>
+          <button type="button" class="btn-close" aria-label="Close" (click)="deleteVehicleOpen.set(false)"></button>
+        </div>
+        <div class="modal-card-body">
+          <p class="mb-2">Delete the passport of <strong>{{ vehicleTitle() }}</strong> ({{ data.vehicle.plate }})?</p>
+          <p class="text-muted-app small mb-0">
+            Maintenance records, documents, reminders and notifications will be permanently deleted.
+          </p>
+        </div>
+        <div class="modal-card-footer">
+          <button type="button" class="btn btn-light" (click)="deleteVehicleOpen.set(false)">Cancel</button>
+          <button type="button" class="btn btn-danger" [disabled]="deletingVehicle()" (click)="deleteVehicle()">
+            @if (deletingVehicle()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            Delete vehicle
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Maintenance record modal --------------------------------------------- -->
+  @if (recordModalOpen()) {
+    <div class="modal-backdrop-app" (click)="closeRecordModal()">
+      <div class="modal-card modal-wide" (click)="$event.stopPropagation()">
+        <form [formGroup]="recordForm" (ngSubmit)="submitRecord()" novalidate>
+          <div class="modal-card-header">
+            <h3><i class="bi bi-tools text-brand me-2"></i>Add maintenance record</h3>
+            <button type="button" class="btn-close" aria-label="Close" (click)="closeRecordModal()"></button>
+          </div>
+          <div class="modal-card-body">
+            @if (recordError()) {
+              <div class="alert alert-danger py-2 px-3 small">{{ recordError() }}</div>
+            }
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label" for="record-type">Type</label>
+                <select id="record-type" class="form-select" formControlName="type">
+                  @for (type of recordTypes; track type) {
+                    <option [value]="type">{{ recordLabels[type] }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="record-date">Service date</label>
+                <input id="record-date" type="date" class="form-control" formControlName="serviceDate" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="record-mileage">Mileage (km)</label>
+                <input id="record-mileage" type="number" class="form-control" formControlName="mileage" min="0" />
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="record-description">Description</label>
+                <textarea
+                  id="record-description"
+                  class="form-control"
+                  rows="2"
+                  formControlName="description"
+                  placeholder="Work performed, parts replaced, observations…"
+                ></textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="record-provider">Provider</label>
+                <input id="record-provider" class="form-control" formControlName="providerName" placeholder="Garage Central Tunis" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="record-part">Part name</label>
+                <input id="record-part" class="form-control" formControlName="partName" placeholder="Front brake pads" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="record-cost">Total cost (TND)</label>
+                <input id="record-cost" type="number" class="form-control" formControlName="cost" min="0" step="0.01" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="record-labor">Labour (TND)</label>
+                <input id="record-labor" type="number" class="form-control" formControlName="laborCost" min="0" step="0.01" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="record-parts">Parts (TND)</label>
+                <input id="record-parts" type="number" class="form-control" formControlName="partsCost" min="0" step="0.01" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="record-next-mileage">Next due mileage</label>
+                <input id="record-next-mileage" type="number" class="form-control" formControlName="nextDueMileage" min="0" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="record-next-date">Next due date</label>
+                <input id="record-next-date" type="date" class="form-control" formControlName="nextDueDate" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="record-part-ref">Part reference</label>
+                <input id="record-part-ref" class="form-control" formControlName="partReference" />
+              </div>
+            </div>
+          </div>
+          <div class="modal-card-footer">
+            <button type="button" class="btn btn-light" (click)="closeRecordModal()">Cancel</button>
+            <button type="submit" class="btn btn-brand" [disabled]="recordSaving()">
+              @if (recordSaving()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              Add record
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Document modal ------------------------------------------------------- -->
+  @if (documentModalOpen()) {
+    <div class="modal-backdrop-app" (click)="closeDocumentModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <form [formGroup]="documentForm" (ngSubmit)="submitDocument()" novalidate>
+          <div class="modal-card-header">
+            <h3>
+              <i class="bi bi-file-earmark-text text-brand me-2"></i>
+              {{ editingDocument() ? 'Edit document' : 'Add document' }}
+            </h3>
+            <button type="button" class="btn-close" aria-label="Close" (click)="closeDocumentModal()"></button>
+          </div>
+          <div class="modal-card-body">
+            @if (documentError()) {
+              <div class="alert alert-danger py-2 px-3 small">{{ documentError() }}</div>
+            }
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="document-type">Type</label>
+                <select id="document-type" class="form-select" formControlName="type">
+                  @for (type of documentTypes; track type) {
+                    <option [value]="type">{{ documentLabels[type] }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="document-number">Number</label>
+                <input id="document-number" class="form-control" formControlName="number" placeholder="POL-2026-…" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="document-issuer">Issuer</label>
+                <input id="document-issuer" class="form-control" formControlName="issuer" placeholder="STAR Assurances" />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="document-issue">Issue date</label>
+                <input id="document-issue" type="date" class="form-control" formControlName="issueDate" />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="document-expiry">
+                  Expiry date <span class="text-danger">*</span>
+                </label>
+                <input
+                  id="document-expiry"
+                  type="date"
+                  class="form-control"
+                  formControlName="expiryDate"
+                  [class.is-invalid]="documentForm.controls.expiryDate.touched && documentForm.controls.expiryDate.invalid"
+                />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="document-cost">Cost (TND)</label>
+                <input id="document-cost" type="number" class="form-control" formControlName="cost" min="0" step="0.01" />
+              </div>
+              <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check mb-2">
+                  <input id="document-active" type="checkbox" class="form-check-input" formControlName="active" />
+                  <label class="form-check-label small" for="document-active">Document is active</label>
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="document-notes">Notes</label>
+                <textarea id="document-notes" class="form-control" rows="2" formControlName="notes"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-card-footer">
+            <button type="button" class="btn btn-light" (click)="closeDocumentModal()">Cancel</button>
+            <button type="submit" class="btn btn-brand" [disabled]="documentSaving()">
+              @if (documentSaving()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              {{ editingDocument() ? 'Save document' : 'Add document' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Reminder modal ------------------------------------------------------- -->
+  @if (reminderModalOpen()) {
+    <div class="modal-backdrop-app" (click)="closeReminderModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <form [formGroup]="reminderForm" (ngSubmit)="submitReminder()" novalidate>
+          <div class="modal-card-header">
+            <h3><i class="bi bi-bell text-brand me-2"></i>Add reminder</h3>
+            <button type="button" class="btn-close" aria-label="Close" (click)="closeReminderModal()"></button>
+          </div>
+          <div class="modal-card-body">
+            @if (reminderError()) {
+              <div class="alert alert-danger py-2 px-3 small">{{ reminderError() }}</div>
+            }
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="reminder-type">Type</label>
+                <select id="reminder-type" class="form-select" formControlName="type" (change)="onReminderTypeChange()">
+                  @for (type of reminderTypes; track type) {
+                    <option [value]="type">{{ reminderLabels[type] }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="reminder-title">Title <span class="text-danger">*</span></label>
+                <input
+                  id="reminder-title"
+                  class="form-control"
+                  formControlName="title"
+                  [class.is-invalid]="reminderForm.controls.title.touched && reminderForm.controls.title.invalid"
+                />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="reminder-mileage">Next due mileage (km)</label>
+                <input id="reminder-mileage" type="number" class="form-control" formControlName="nextDueMileage" min="0" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="reminder-expiry">Expiry date</label>
+                <input id="reminder-expiry" type="date" class="form-control" formControlName="expiryDate" />
+              </div>
+              <div class="col-12">
+                <div class="form-hint">A reminder needs at least a due mileage or an expiry date.</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="reminder-notes">Notes</label>
+                <textarea id="reminder-notes" class="form-control" rows="2" formControlName="notes"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-card-footer">
+            <button type="button" class="btn btn-light" (click)="closeReminderModal()">Cancel</button>
+            <button type="submit" class="btn btn-brand" [disabled]="reminderSaving()">
+              @if (reminderSaving()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              Add reminder
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Generic delete confirmation ----------------------------------------- -->
+  @if (confirmAction(); as action) {
+    <div class="modal-backdrop-app" (click)="closeConfirm()">
+      <div class="modal-card modal-narrow" (click)="$event.stopPropagation()">
+        <div class="modal-card-header">
+          <h3><i class="bi bi-exclamation-triangle text-danger me-2"></i>{{ action.title }}</h3>
+          <button type="button" class="btn-close" aria-label="Close" (click)="closeConfirm()"></button>
+        </div>
+        <div class="modal-card-body">
+          <p class="mb-0">{{ action.message }}</p>
+        </div>
+        <div class="modal-card-footer">
+          <button type="button" class="btn btn-light" (click)="closeConfirm()">Cancel</button>
+          <button type="button" class="btn btn-danger" [disabled]="confirmBusy()" (click)="confirmDelete()">
+            @if (confirmBusy()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+}
