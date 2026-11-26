@@ -1,0 +1,336 @@
+<div class="page-header">
+  <div>
+    <a routerLink="/vehicles" class="back-link"><i class="bi bi-arrow-left me-1"></i>Vehicles</a>
+    <h1>{{ isEdit ? 'Edit vehicle' : 'Register a vehicle' }}</h1>
+    <p>
+      @if (isEdit) {
+        Update the identity and technical details of this passport.
+      } @else {
+        Create the passport that will hold maintenance, documents and reminders.
+      }
+    </p>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="surface">
+    <div class="surface-body text-center py-5 text-muted-app">
+      <span class="spinner-border text-success me-2"></span> Loading…
+    </div>
+  </div>
+} @else {
+  @if (error()) {
+    <div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-1"></i>{{ error() }}</div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <div class="surface mb-3">
+          <div class="surface-header">
+            <div>
+              <div class="section-title"><i class="bi bi-person-vcard me-1 text-brand"></i> Vehicle identity</div>
+              <div class="text-muted-app small">Choose a brand and model from the shared catalogue.</div>
+            </div>
+          </div>
+          <div class="surface-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="brandId">Brand <span class="text-danger">*</span></label>
+                <select
+                  id="brandId"
+                  class="form-select"
+                  formControlName="brandId"
+                  (change)="onBrandChange()"
+                  [class.is-invalid]="invalid('brandId')"
+                >
+                  <option [ngValue]="0" disabled>Select a brand…</option>
+                  @for (brand of brands(); track brand.id) {
+                    <option [ngValue]="brand.id">{{ brand.name }} ({{ brand.modelCount }} models)</option>
+                  }
+                </select>
+                @if (invalid('brandId')) {
+                  <div class="field-error">Choose a brand.</div>
+                }
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="modelId">Model <span class="text-danger">*</span></label>
+                <select
+                  id="modelId"
+                  class="form-select"
+                  formControlName="modelId"
+                  (change)="onModelChange()"
+                  [class.is-invalid]="invalid('modelId')"
+                >
+                  <option [ngValue]="0" disabled>
+                    {{ modelsLoading() ? 'Loading models…' : 'Select a model…' }}
+                  </option>
+                  @for (model of models(); track model.id) {
+                    <option [ngValue]="model.id">{{ model.name }}</option>
+                  }
+                </select>
+                @if (invalid('modelId')) {
+                  <div class="field-error">Choose a model for the selected brand.</div>
+                }
+                @if (selectedModel(); as model) {
+                  <div class="form-hint">
+                    Catalogue body type: <strong>{{ model.bodyType }}</strong>
+                    @if (model.yearFrom) {
+                      · {{ model.yearFrom }}–{{ model.yearTo ?? 'now' }}
+                    }
+                  </div>
+                }
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="nickname">Nickname</label>
+                <input id="nickname" class="form-control" formControlName="nickname" placeholder="e.g. Daily driver" />
+                <div class="form-hint">Optional friendly name shown on the dashboard.</div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="year">Year <span class="text-danger">*</span></label>
+                <input
+                  id="year"
+                  type="number"
+                  class="form-control"
+                  formControlName="year"
+                  [min]="1950"
+                  [max]="2100"
+                  [class.is-invalid]="invalid('year')"
+                />
+                @if (invalid('year')) {
+                  <div class="field-error">Year must be between 1950 and 2100.</div>
+                }
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" for="color">Color</label>
+                <input id="color" class="form-control" formControlName="color" placeholder="Silver" />
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label" for="plate">License plate <span class="text-danger">*</span></label>
+                <input
+                  id="plate"
+                  class="form-control text-uppercase"
+                  formControlName="plate"
+                  placeholder="123 TUN 4567"
+                  [class.is-invalid]="invalid('plate')"
+                />
+                @if (invalid('plate')) {
+                  <div class="field-error">The plate is required (20 characters max).</div>
+                }
+              </div>
+
+              <div class="col-md-2">
+                <label class="form-label" for="plateCountry">Country</label>
+                <input id="plateCountry" class="form-control text-uppercase" formControlName="plateCountry" maxlength="3" />
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="vin">VIN <span class="text-danger">*</span></label>
+                <input
+                  id="vin"
+                  class="form-control text-uppercase mono"
+                  formControlName="vin"
+                  placeholder="17 characters"
+                  maxlength="17"
+                  [class.is-invalid]="invalid('vin')"
+                />
+                @if (invalid('vin')) {
+                  <div class="field-error">VIN must contain 11 to 17 letters and digits only.</div>
+                } @else {
+                  <div class="form-hint">Chassis number · letters and digits only.</div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="surface mb-3">
+          <div class="surface-header">
+            <div>
+              <div class="section-title"><i class="bi bi-gear-wide-connected me-1 text-brand"></i> Technical details</div>
+              <div class="text-muted-app small">Used by the health score and reminder rules.</div>
+            </div>
+          </div>
+          <div class="surface-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label" for="fuelType">Fuel</label>
+                <select id="fuelType" class="form-select" formControlName="fuelType">
+                  @for (fuel of fuelTypes; track fuel) {
+                    <option [value]="fuel">{{ fuelLabels[fuel] }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="transmission">Transmission</label>
+                <select id="transmission" class="form-select" formControlName="transmission">
+                  @for (item of transmissions; track item) {
+                    <option [value]="item">{{ transmissionLabels[item] }}</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="vehicleType">Vehicle type</label>
+                <select id="vehicleType" class="form-select" formControlName="vehicleType">
+                  @for (type of vehicleTypes; track type) {
+                    <option [value]="type">{{ vehicleTypeLabels[type] }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label" for="mileage">Current mileage (km) <span class="text-danger">*</span></label>
+                <input
+                  id="mileage"
+                  type="number"
+                  class="form-control"
+                  formControlName="mileage"
+                  min="0"
+                  [class.is-invalid]="invalid('mileage')"
+                />
+                @if (invalid('mileage')) {
+                  <div class="field-error">Mileage cannot be negative.</div>
+                }
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="engineCapacityCc">Engine capacity (cc)</label>
+                <input id="engineCapacityCc" type="number" class="form-control" formControlName="engineCapacityCc" placeholder="1600" />
+                @if (form.controls.engineCapacityCc.touched && form.controls.engineCapacityCc.invalid) {
+                  <div class="field-error">Between 50 and 15,000 cc.</div>
+                }
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="powerHp">Power (hp)</label>
+                <input id="powerHp" type="number" class="form-control" formControlName="powerHp" placeholder="120" />
+                @if (form.controls.powerHp.touched && form.controls.powerHp.invalid) {
+                  <div class="field-error">Between 1 and 2,000 hp.</div>
+                }
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label" for="registrationDate">Registration date</label>
+                <input id="registrationDate" type="date" class="form-control" formControlName="registrationDate" />
+                <div class="form-hint">Used to compute the vehicle age penalty.</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="status">Status</label>
+                <select id="status" class="form-select" formControlName="status">
+                  @for (item of statuses; track item) {
+                    <option [value]="item">{{ statusLabels[item] }}</option>
+                  }
+                </select>
+              </div>
+              @if (auth.isManager()) {
+                <div class="col-md-4">
+                  <label class="form-label" for="ownerId">Owner user ID</label>
+                  <input
+                    id="ownerId"
+                    type="number"
+                    class="form-control"
+                    formControlName="ownerId"
+                    placeholder="Leave empty for yourself"
+                  />
+                  <div class="form-hint">
+                    Managers may assign the passport to another Mecanico user (e.g. a driver).
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="surface">
+          <div class="surface-header">
+            <div>
+              <div class="section-title"><i class="bi bi-journal-text me-1 text-brand"></i> Media &amp; notes</div>
+              <div class="text-muted-app small">Optional context for this vehicle.</div>
+            </div>
+          </div>
+          <div class="surface-body">
+            <div class="mb-3">
+              <label class="form-label" for="photoUrl">Photo URL</label>
+              <input id="photoUrl" class="form-control" formControlName="photoUrl" placeholder="https://…" />
+            </div>
+            <div>
+              <label class="form-label" for="notes">Notes</label>
+              <textarea
+                id="notes"
+                class="form-control"
+                rows="3"
+                formControlName="notes"
+                placeholder="Anything a garage or the next owner should know…"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <a routerLink="/vehicles" class="btn btn-light">Cancel</a>
+          <button type="submit" class="btn btn-brand" [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            } @else {
+              <i class="bi bi-check2-circle me-1"></i>
+            }
+            {{ isEdit ? 'Save changes' : 'Register vehicle' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="surface preview-card mb-3">
+          <div class="preview-hero">
+            <i class="bi bi-car-front-fill"></i>
+            <span class="preview-plate">{{ form.controls.plate.value || 'YOUR PLATE' }}</span>
+          </div>
+          <div class="surface-body">
+            <strong class="preview-name">
+              {{ form.controls.nickname.value || (selectedBrand()?.name ?? 'New vehicle') }}
+              {{ form.controls.nickname.value ? '' : (selectedModel()?.name ?? '') }}
+            </strong>
+            <div class="text-muted-app small">
+              {{ selectedBrand()?.name ?? 'Brand' }}
+              {{ selectedModel()?.name ?? 'Model' }}
+              @if (form.controls.year.value) {
+                · {{ form.controls.year.value }}
+              }
+            </div>
+            <div class="preview-tags">
+              <span class="badge-soft badge-soft--neutral">{{ fuelLabels[form.controls.fuelType.value] }}</span>
+              <span class="badge-soft badge-soft--neutral">{{ transmissionLabels[form.controls.transmission.value] }}</span>
+              <span class="badge-soft badge-soft--neutral">{{ form.controls.mileage.value | number }} km</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="surface mb-3">
+          <div class="surface-body">
+            <div class="side-title"><i class="bi bi-magic text-brand me-1"></i> What happens next</div>
+            <ul class="side-list">
+              <li><i class="bi bi-check2"></i> Two default reminders at {{ form.controls.mileage.value | number }} km + 10,000 km: oil change and tire rotation.</li>
+              <li><i class="bi bi-check2"></i> A deterministic health score computed from age, mileage, history, documents and reminders.</li>
+              <li><i class="bi bi-check2"></i> A daily scan checks documents expiring in 30 and 7 days.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="surface">
+          <div class="surface-body">
+            <div class="side-title"><i class="bi bi-lightbulb text-brand me-1"></i> Good to know</div>
+            <p class="small text-muted-app mb-2">
+              VIN and plate must be unique across the platform. The backend normalises them to uppercase.
+            </p>
+            <p class="small text-muted-app mb-0">
+              Managers can see every vehicle; drivers only see the vehicles they own.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+}

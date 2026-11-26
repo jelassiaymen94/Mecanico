@@ -1,0 +1,194 @@
+<div class="page-header">
+  <div>
+    <span class="eyebrow">Vehicle passports</span>
+    <h1>My vehicles</h1>
+    <p>
+      @if (page(); as data) {
+        {{ data.totalElements }} vehicle(s) visible to your {{ auth.isManager() ? 'manager' : 'driver' }} account.
+      } @else {
+        Search, inspect and register vehicles.
+      }
+    </p>
+  </div>
+  <a routerLink="/vehicles/new" class="btn btn-brand"><i class="bi bi-plus-lg me-1"></i> Register vehicle</a>
+</div>
+
+<div class="surface filter-bar">
+  <form [formGroup]="filters" (ngSubmit)="applyFilters()" class="row g-2 align-items-end">
+    <div class="col-lg-6">
+      <label class="form-label" for="vehicle-search">Search</label>
+      <div class="input-group">
+        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+        <input
+          id="vehicle-search"
+          type="search"
+          class="form-control"
+          formControlName="search"
+          placeholder="Plate, VIN, nickname, brand or model"
+        />
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <label class="form-label" for="vehicle-status">Status</label>
+      <select id="vehicle-status" class="form-select" formControlName="status" (change)="applyFilters()">
+        <option value="">All statuses</option>
+        @for (status of statuses; track status) {
+          <option [value]="status">{{ statusLabels[status] }}</option>
+        }
+      </select>
+    </div>
+    <div class="col-sm-6 col-lg-3 d-flex gap-2">
+      <button type="submit" class="btn btn-brand flex-fill"><i class="bi bi-funnel me-1"></i> Filter</button>
+      <button type="button" class="btn btn-soft" (click)="resetFilters()" title="Reset filters">
+        <i class="bi bi-arrow-counterclockwise"></i>
+      </button>
+    </div>
+  </form>
+</div>
+
+@if (loading()) {
+  <div class="surface mt-3">
+    <div class="surface-body text-center py-5 text-muted-app">
+      <span class="spinner-border text-success me-2"></span> Loading vehicles…
+    </div>
+  </div>
+} @else if (error()) {
+  <div class="alert alert-danger mt-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <span><i class="bi bi-exclamation-triangle me-1"></i>{{ error() }}</span>
+    <button type="button" class="btn btn-sm btn-outline-danger" (click)="load(0)">Retry</button>
+  </div>
+} @else if (page(); as data) {
+  <div class="surface mt-3">
+    <div class="table-responsive">
+      <table class="table table-app align-middle">
+        <thead>
+          <tr>
+            <th>Vehicle</th>
+            <th>Plate &amp; VIN</th>
+            <th>Specs</th>
+            <th>Mileage</th>
+            <th>Health</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (vehicle of data.content; track vehicle.id) {
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="vehicle-avatar"><i class="bi bi-car-front-fill"></i></span>
+                  <div class="min-w-0">
+                    <a class="vehicle-link" [routerLink]="['/vehicles', vehicle.id]">{{ vehicleTitle(vehicle) }}</a>
+                    <span class="vehicle-sub">{{ vehicle.brandName }} {{ vehicle.modelName }} · {{ vehicle.year }}</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="plate-chip">{{ vehicle.plate }}</span>
+                <span class="vehicle-sub mono">{{ vehicle.vin }}</span>
+              </td>
+              <td>
+                <span class="spec-line">{{ fuelLabel(vehicle) }} · {{ transmissionLabel(vehicle) }}</span>
+                <span class="vehicle-sub">{{ vehicle.engineCapacityCc ?? '—' }} cc · {{ vehicle.powerHp ?? '—' }} hp</span>
+              </td>
+              <td class="fw-semibold">{{ formatKm(vehicle.mileage) }}</td>
+              <td>
+                <div class="health-inline">
+                  <span [class]="gradeCss(vehicle)">{{ vehicle.healthScore }}</span>
+                  <span class="health-grade-pill" [class]="'health-grade-pill ' + gradeClass(vehicle.healthGrade)">
+                    {{ vehicle.healthGrade }}
+                  </span>
+                </div>
+              </td>
+              <td><span [class]="statusCss(vehicle)">{{ statusLabel(vehicle) }}</span></td>
+              <td>
+                <div class="d-flex justify-content-end gap-1">
+                  <a class="btn-icon" [routerLink]="['/vehicles', vehicle.id]" title="Open passport">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a class="btn-icon" [routerLink]="['/vehicles', vehicle.id, 'edit']" title="Edit vehicle">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <button type="button" class="btn-icon danger" title="Delete vehicle" (click)="askDelete(vehicle)">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7">
+                <div class="empty-state">
+                  <i class="bi bi-car-front"></i>
+                  <strong class="d-block mb-1">No vehicles match your filters</strong>
+                  Adjust the search or register a new vehicle.
+                  <div class="mt-3">
+                    <a routerLink="/vehicles/new" class="btn btn-brand btn-sm">
+                      <i class="bi bi-plus-lg me-1"></i> Register a vehicle
+                    </a>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (data.totalPages > 1) {
+      <div class="pager">
+        <span class="text-muted-app small">
+          Page {{ data.page + 1 }} of {{ data.totalPages }} · {{ data.totalElements }} result(s)
+        </span>
+        <div class="pager-buttons">
+          <button type="button" class="btn-icon" [disabled]="data.first" (click)="changePage(data.page - 1)" title="Previous page">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          @for (pageIndex of visiblePages(); track pageIndex) {
+            <button
+              type="button"
+              class="pager-number"
+              [class.active]="pageIndex === data.page"
+              (click)="changePage(pageIndex)"
+            >
+              {{ pageIndex + 1 }}
+            </button>
+          }
+          <button type="button" class="btn-icon" [disabled]="data.last" (click)="changePage(data.page + 1)" title="Next page">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+@if (deleteTarget(); as target) {
+  <div class="modal-backdrop-app" (click)="cancelDelete()">
+    <div class="modal-card modal-narrow" (click)="$event.stopPropagation()">
+      <div class="modal-card-header">
+        <h3><i class="bi bi-exclamation-triangle text-danger me-2"></i>Delete vehicle</h3>
+        <button type="button" class="btn-close" aria-label="Close" (click)="cancelDelete()"></button>
+      </div>
+      <div class="modal-card-body">
+        <p class="mb-2">
+          Remove the passport of <strong>{{ vehicleTitle(target) }}</strong> ({{ target.plate }})?
+        </p>
+        <p class="text-muted-app small mb-0">
+          Maintenance records, documents, reminders and notifications linked to this vehicle are deleted
+          permanently.
+        </p>
+      </div>
+      <div class="modal-card-footer">
+        <button type="button" class="btn btn-light" (click)="cancelDelete()">Cancel</button>
+        <button type="button" class="btn btn-danger" [disabled]="deleting()" (click)="confirmDelete()">
+          @if (deleting()) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+          }
+          Delete vehicle
+        </button>
+      </div>
+    </div>
+  </div>
+}

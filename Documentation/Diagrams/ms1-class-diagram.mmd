@@ -1,0 +1,104 @@
+classDiagram
+  direction LR
+
+  class Vehicle {
+    Long id
+    Long ownerId
+    String vin
+    String plate
+    String plateCountry
+    Integer year
+    Integer mileage
+    LocalDate registrationDate
+    String color
+    String nickname
+    VehicleType vehicleType
+    FuelType fuelType
+    TransmissionType transmission
+    Integer engineCapacityCc
+    Integer powerHp
+    VehicleStatus status
+    String photoUrl
+    String notes
+    LocalDateTime createdAt
+    LocalDateTime updatedAt
+  }
+
+  class VehicleBrand {
+    Long id
+    String name
+    String slug
+    String country
+    String logoUrl
+    boolean active
+  }
+
+  class VehicleModel {
+    Long id
+    String name
+    String slug
+    BodyType bodyType
+    Integer yearFrom
+    Integer yearTo
+    boolean active
+  }
+
+  class MaintenanceRecord {
+    Long id
+    RecordType type
+    LocalDate serviceDate
+    Integer mileage
+    String description
+    String providerName
+    BigDecimal cost
+    String currency
+    BigDecimal laborCost
+    BigDecimal partsCost
+    String partName
+    LocalDate nextDueDate
+    Integer nextDueMileage
+    LocalDateTime createdAt
+  }
+
+  class VehicleDocument {
+    Long id
+    DocumentType type
+    String number
+    String issuer
+    LocalDate issueDate
+    LocalDate expiryDate
+    BigDecimal cost
+    boolean active
+    boolean notification30Sent
+    boolean notification7Sent
+  }
+
+  class ServiceReminder {
+    Long id
+    ReminderType type
+    String title
+    Integer mileageTrigger
+    Integer nextDueMileage
+    LocalDate expiryDate
+    ReminderStatus status
+    boolean notified
+    LocalDateTime lastNotifiedAt
+    LocalDateTime completedAt
+  }
+
+  class NotificationLog {
+    Long id
+    NotificationEventType eventType
+    String message
+    NotificationChannel channel
+    NotificationStatus status
+    LocalDateTime createdAt
+  }
+
+  Vehicle "1" --> "1" VehicleBrand : marque
+  Vehicle "1" --> "1" VehicleModel : modèle
+  Vehicle "1" *-- "0..*" MaintenanceRecord : carnet
+  Vehicle "1" *-- "0..*" VehicleDocument : documents
+  Vehicle "1" *-- "0..*" ServiceReminder : rappels
+  Vehicle "1" *-- "0..*" NotificationLog : notifications
+  VehicleBrand "1" o-- "0..*" VehicleModel : catalogue

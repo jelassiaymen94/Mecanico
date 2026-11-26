@@ -1,0 +1,112 @@
+<div class="app-shell" [class.sidebar-open]="mobileOpen()">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-mark"><i class="bi bi-car-front-fill"></i></span>
+      <span>
+        <strong>Mecanico</strong>
+        <small>Vehicle Passport</small>
+      </span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <span class="nav-caption">Garage</span>
+      @for (item of navItems; track item.path) {
+        <a
+          class="nav-link-app"
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          (click)="closeSidebar()"
+        >
+          <i class="bi" [class]="'bi ' + item.icon"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+
+      <div class="sidebar-cta">
+        <span class="cta-icon"><i class="bi bi-plus-circle"></i></span>
+        <div>
+          <strong>New vehicle</strong>
+          <small>Add a passport in a minute</small>
+        </div>
+        <a routerLink="/vehicles/new" class="cta-link" (click)="closeSidebar()" aria-label="Register a vehicle">
+          <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="api-chip">
+        <span class="dot"></span>
+        <div>
+          <strong>API Gateway</strong>
+          <small>localhost:8084</small>
+        </div>
+      </div>
+      <a class="portal-link" [href]="usersPortalUrl" target="_blank" rel="noopener">
+        <i class="bi bi-people"></i>
+        <span>
+          <strong>Users &amp; access portal</strong>
+          <small>profiles, roles, addresses</small>
+        </span>
+        <i class="bi bi-box-arrow-up-right arrow"></i>
+      </a>
+      <div class="sidebar-user">
+        <span class="avatar">
+          @if (auth.user()?.avatarUrl) {
+            <img [src]="auth.user()?.avatarUrl" [alt]="auth.user()?.fullName" />
+          } @else {
+            {{ auth.initials() }}
+          }
+        </span>
+        <div class="sidebar-user-text">
+          <strong>{{ auth.user()?.fullName }}</strong>
+          <small>{{ roleLabel() }}</small>
+        </div>
+        <button type="button" class="logout-btn" title="Sign out" (click)="logout()">
+          <i class="bi bi-box-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="sidebar-backdrop" (click)="closeSidebar()"></div>
+
+  <div class="app-main">
+    <header class="topbar">
+      <button type="button" class="hamburger" (click)="toggleSidebar()" aria-label="Toggle navigation">
+        <i class="bi bi-list"></i>
+      </button>
+      <div class="topbar-title">
+        <h2>{{ pageTitle() }}</h2>
+        <span>{{ auth.user()?.fullName }} · {{ roleLabel() }}</span>
+      </div>
+      <div class="topbar-actions">
+        <a routerLink="/vehicles/new" class="btn btn-brand btn-sm d-none d-sm-inline-flex">
+          <i class="bi bi-plus-lg me-1"></i> New vehicle
+        </a>
+        <a routerLink="/notifications" class="topbar-icon" title="Notifications">
+          <i class="bi bi-bell"></i>
+        </a>
+        <a
+          [href]="usersPortalUrl"
+          target="_blank"
+          rel="noopener"
+          class="topbar-avatar"
+          title="Open the Users portal"
+        >
+          <span class="avatar">
+            @if (auth.user()?.avatarUrl) {
+              <img [src]="auth.user()?.avatarUrl" [alt]="auth.user()?.fullName" />
+            } @else {
+              {{ auth.initials() }}
+            }
+          </span>
+        </a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

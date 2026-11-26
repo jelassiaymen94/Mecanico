@@ -1,0 +1,50 @@
+server:
+  # 8080 is reserved by Oracle TNSLSNR on this machine; 8084 is free.
+  port: 8084
+
+spring:
+  application:
+    name: mecanico-api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # Users service: auth, profiles, addresses, admin user management, internal lookup
+            - id: mecanico-user-service
+              uri: lb://mecanico-user-service
+              predicates:
+                - Path=/api/auth/**,/api/users/**,/api/admin/users,/api/admin/users/**,/api/internal/**
+
+            # Vehicle Passport service: vehicles, catalog, dashboard, notifications, admin scan
+            - id: mecanico-vehicle-passport-service
+              uri: lb://mecanico-vehicle-passport-service
+              predicates:
+                - Path=/api/admin/scan,/api/catalog/**,/api/vehicles/**,/api/dashboard/**,/api/notifications/**,/api/me/**
+
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - "http://localhost:4200"
+                  - "http://localhost:4201"
+                  - "http://127.0.0.1:4200"
+                  - "http://127.0.0.1:4201"
+                allowedMethods: "*"
+                allowedHeaders: "*"
+                allowCredentials: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway

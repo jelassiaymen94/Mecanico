@@ -1,8 +1,20 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# Build
+target/
+build/
 node_modules/
-dist/
-coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / local config
 .env
 *.log
-.DS_Store
-.vscode/
-.idea/
