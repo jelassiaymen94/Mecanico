@@ -33,6 +33,8 @@ export class ShellComponent {
     { label: 'Dashboard', icon: 'bi-grid-1x2-fill', path: '/dashboard' },
     { label: 'Vehicles', icon: 'bi-car-front-fill', path: '/vehicles' },
     { label: 'Notifications', icon: 'bi-bell-fill', path: '/notifications' },
+    { label: 'Marketplace', icon: 'bi-shop', path: '/marketplace' },
+    { label: 'Roadside assistance', icon: 'bi-truck', path: '/dispatch' },
   ];
 
   constructor() {
@@ -74,6 +76,18 @@ export class ShellComponent {
     }
     if (url.startsWith('/notifications')) {
       return 'Notifications';
+    }
+    if (/^\/marketplace\/new/.test(url)) {
+      return 'New listing';
+    }
+    if (/^\/marketplace\/[^/]+\/edit/.test(url)) {
+      return 'Edit listing';
+    }
+    if (url.startsWith('/marketplace')) {
+      return 'Marketplace';
+    }
+    if (url.startsWith('/dispatch')) {
+      return 'Roadside assistance';
     }
     return 'Dashboard';
   }

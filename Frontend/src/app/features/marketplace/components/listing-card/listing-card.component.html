@@ -1,0 +1,35 @@
+<article class="listing-card">
+  <div class="card-top">
+    <span class="category">{{ categoryLabel() }}</span>
+    <app-status-badge [status]="listing().status" />
+  </div>
+
+  <div class="card-body">
+    <h3>
+      <a [routerLink]="['/marketplace', listing().id]">{{ listing().title }}</a>
+    </h3>
+    <p class="meta">
+      {{ listing().brand || 'Marque non précisée' }}
+      @if (listing().compatibleModels) {
+        <span class="dot">·</span> {{ listing().compatibleModels }}
+      }
+    </p>
+    <p class="description">{{ listing().description }}</p>
+  </div>
+
+  <div class="card-tags">
+    <span class="tag">{{ conditionLabel() }}</span>
+    <span class="tag">{{ listing().quantity }} disponible(s)</span>
+    <span class="tag">{{ listing().city }}</span>
+  </div>
+
+  <div class="card-footer">
+    <div class="price-block">
+      <span class="price">{{ listing().price | number: '1.0-0' }} <small>TND</small></span>
+      <span class="seller">Vendeur {{ listing().sellerId }}</span>
+    </div>
+    <a class="card-link" [routerLink]="['/marketplace', listing().id]">
+      Voir l'annonce <span aria-hidden="true">→</span>
+    </a>
+  </div>
+</article>

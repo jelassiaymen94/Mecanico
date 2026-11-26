@@ -43,6 +43,27 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/notifications/notifications').then((m) => m.NotificationsComponent),
       },
+      // MS3 - Marketplace & live tracking (wrapped so its global styles stay scoped)
+      {
+        path: '',
+        loadComponent: () =>
+          import('./layout/marketplace-scope').then((m) => m.MarketplaceScopeComponent),
+        children: [
+          {
+            path: 'marketplace',
+            loadChildren: () =>
+              import('./features/marketplace/marketplace.routes').then((m) => m.MARKETPLACE_ROUTES),
+          },
+          {
+            path: 'dispatch',
+            title: 'Dépannage & suivi · Mecanico',
+            loadComponent: () =>
+              import('./features/dispatch/pages/dispatch-page/dispatch-page.component').then(
+                (m) => m.DispatchPageComponent,
+              ),
+          },
+        ],
+      },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

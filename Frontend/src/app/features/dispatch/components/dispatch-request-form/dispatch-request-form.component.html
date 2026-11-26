@@ -1,0 +1,71 @@
+<form class="request-card card" [formGroup]="form" (ngSubmit)="submit()">
+  <div class="card-heading">
+    <div>
+      <span class="eyebrow">Nouvelle demande</span>
+      <h2>Décris ton problème</h2>
+    </div>
+    <span class="demo-label">Démo</span>
+  </div>
+
+  <fieldset class="service-fieldset">
+    <legend>Type d’assistance</legend>
+    <div class="service-grid">
+      @for (option of serviceTypeOptions; track option.value) {
+        <label class="service-option" [class.selected]="form.controls.serviceType.value === option.value">
+          <input type="radio" formControlName="serviceType" [value]="option.value" />
+          <span class="service-label">{{ option.label }}</span>
+          <span class="service-description">{{ option.description }}</span>
+        </label>
+      }
+    </div>
+  </fieldset>
+
+  <div class="form-grid">
+    <label class="field">
+      <span>Point de prise en charge</span>
+      <select formControlName="pickupPointId">
+        @for (point of pickupPoints; track point.id) {
+          <option [value]="point.id">{{ point.label }} — {{ point.address }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Véhicule</span>
+      <input formControlName="vehicle" placeholder="Clio 3, 2015, diesel..." maxlength="120" />
+      @if (isInvalid('vehicle')) {
+        <small class="field-error">Le véhicule est limité à 120 caractères.</small>
+      }
+    </label>
+
+    @if (form.controls.serviceType.value === 'TOWING') {
+      <label class="field span-2">
+        <span>Destination du remorquage (optionnel)</span>
+        <input formControlName="destination" placeholder="Garage, domicile, adresse..." />
+      </label>
+    }
+
+    <label class="field span-2">
+      <span>Description de la panne</span>
+      <textarea
+        formControlName="description"
+        rows="4"
+        maxlength="500"
+        placeholder="Ex. Le moteur ne démarre plus, voyant batterie allumé, véhicule garé devant le numéro 12..."
+      ></textarea>
+      @if (isInvalid('description')) {
+        <small class="field-error">Décris la situation en 10 à 500 caractères.</small>
+      }
+    </label>
+  </div>
+
+  <div class="form-footer">
+    <p class="position-note">
+      <span aria-hidden="true">◎</span>
+      La position est simulée à partir du point choisi. Aucune géolocalisation réelle n’est demandée.
+    </p>
+    <button class="btn btn-primary" type="submit">
+      Trouver un dépanneur <span aria-hidden="true">→</span>
+    </button>
+  </div>
+</form>

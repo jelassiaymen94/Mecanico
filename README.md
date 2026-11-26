@@ -75,6 +75,9 @@ flowchart LR
 ```
 Mecanico/
 ├── Backend/
+│   ├── api-gateway/                  # Spring Cloud Gateway (port 8084)
+│   ├── eureka-server/                # Registre Eureka (port 8761)
+│   ├── marketplace-service/          # Spring Boot MS3 Marketplace (port 8081)
 │   └── vehicle-passport-service/     # Spring Boot MS1 (port 8082)
 ├── Database/
 │   └── 02_mecanico_vehicle_passport_db.sql
@@ -82,7 +85,7 @@ Mecanico/
 │   ├── architecture.md               # contrat API, modèle, règles, sécurité
 │   ├── Diagrams/ms1-class-diagram.mmd
 │   └── Presentation/
-├── Frontend/                         # Angular Vehicle Passport (port 4201)
+├── Frontend/                         # Angular Vehicle Passport + MS3 Marketplace/Dépannage (port 4201)
 └── README.md
 ```
 
@@ -174,6 +177,23 @@ npm start -- --port 4201
 
 Ouvrir http://localhost:4201. Le portail interroge le Users service sur 8083 puis le service
 Passport sur 8082 (voir `src/environments/environment.ts`).
+
+### 5. Marketplace service (MS3) — port 8081
+
+```bash
+mysql -u root < "Backend/marketplace-service/scripts/create-database.sql"
+cd Backend/marketplace-service
+./mvnw spring-boot:run
+```
+
+Les tables sont créées par Flyway (`src/main/resources/db/migration`). Variables :
+`MARKETPLACE_DB_URL`, `MARKETPLACE_DB_USERNAME`, `MARKETPLACE_DB_PASSWORD`, `SERVER_PORT`,
+`CORS_ALLOWED_ORIGINS` (voir `.env.example`). Swagger : http://localhost:8081/swagger-ui.html
+
+Dans le portail, les pages **Marketplace** (`/marketplace`) et **Roadside assistance**
+(`/dispatch`, données simulées + carte Leaflet) appellent directement ce service via
+`environment.marketplaceApiBaseUrl`. Le service n'est pas encore enregistré dans Eureka ni
+routé par l'API Gateway.
 
 ### Variables d'environnement utiles
 

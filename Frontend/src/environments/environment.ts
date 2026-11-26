@@ -4,4 +4,6 @@ export const environment = {
   usersApiBaseUrl: 'http://localhost:8084/api',
   appName: 'Mecanico Vehicle Passport',
   usersPortalUrl: 'http://localhost:4200',
+  // MS3 Marketplace service (called directly; not yet registered with Eureka/the gateway).
+  marketplaceApiBaseUrl: 'http://localhost:8081',
 };

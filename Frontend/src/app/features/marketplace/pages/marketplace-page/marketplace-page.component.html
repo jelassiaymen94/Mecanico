@@ -1,0 +1,122 @@
+<section class="marketplace-page">
+  <div class="container">
+    <header class="page-hero">
+      <div class="hero-copy">
+        <span class="eyebrow">Marketplace</span>
+        <h1>La bonne pièce, au bon prix.</h1>
+        <p>
+          Trouve des pièces détachées proposées par des vendeurs près de chez toi, compare les
+          annonces et commande en quelques clics.
+        </p>
+      </div>
+      <a class="btn btn-primary" routerLink="/marketplace/new">
+        <span aria-hidden="true">+</span> Publier une annonce
+      </a>
+    </header>
+
+    <form class="filters card" [formGroup]="filters" (ngSubmit)="loadListings(0)">
+      <div class="filter-main">
+        <label class="search-field">
+          <span class="sr-only">Rechercher une annonce</span>
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input
+            type="search"
+            formControlName="q"
+            placeholder="Rechercher une pièce, une marque, un modèle..."
+          />
+        </label>
+        <button class="btn btn-primary" type="submit">Rechercher</button>
+      </div>
+
+      <div class="filter-row">
+        <label class="field compact">
+          <span>Catégorie</span>
+          <select formControlName="category">
+            <option value="">Toutes les catégories</option>
+            @for (option of categoryOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field compact">
+          <span>Ville</span>
+          <input formControlName="city" placeholder="Tunis, Sfax, Sousse..." />
+        </label>
+
+        <label class="field compact">
+          <span>Statut</span>
+          <select formControlName="status">
+            <option value="">Tous les statuts</option>
+            @for (option of statusOptions; track option[0]) {
+              <option [value]="option[0]">{{ option[1] }}</option>
+            }
+          </select>
+        </label>
+
+        <button class="btn btn-ghost reset-button" type="button" (click)="resetFilters()">
+          Réinitialiser
+        </button>
+      </div>
+    </form>
+
+    <div class="results-head">
+      <p><strong>{{ totalElements() }}</strong> annonce(s) trouvée(s)</p>
+      @if (totalPages() > 1) {
+        <span>Page {{ page() + 1 }} sur {{ totalPages() }}</span>
+      }
+    </div>
+
+    @if (error()) {
+      <div class="alert alert-error" role="alert">{{ error() }}</div>
+    }
+
+    @if (loading()) {
+      <div class="listing-grid" aria-label="Chargement des annonces">
+        @for (skeleton of [1, 2, 3, 4, 5, 6]; track skeleton) {
+          <div class="skeleton-card" aria-hidden="true"></div>
+        }
+      </div>
+    } @else if (listings().length === 0) {
+      <div class="empty-state card">
+        <span class="empty-icon" aria-hidden="true">🔧</span>
+        <h2>Aucune annonce pour ces critères</h2>
+        <p>Essaie une autre recherche ou publie la première annonce du marketplace.</p>
+        <div class="empty-actions">
+          <button class="btn btn-secondary" type="button" (click)="resetFilters()">
+            Effacer les filtres
+          </button>
+          <a class="btn btn-primary" routerLink="/marketplace/new">Publier une annonce</a>
+        </div>
+      </div>
+    } @else {
+      <div class="listing-grid">
+        @for (listing of listings(); track listing.id) {
+          <app-listing-card [listing]="listing" />
+        }
+      </div>
+    }
+
+    @if (totalPages() > 1) {
+      <nav class="pagination" aria-label="Pagination des annonces">
+        <button
+          class="btn btn-secondary"
+          type="button"
+          (click)="previousPage()"
+          [disabled]="page() === 0"
+        >
+          ← Précédent
+        </button>
+        <span>Page {{ page() + 1 }} sur {{ totalPages() }}</span>
+        <button
+          class="btn btn-secondary"
+          type="button"
+          (click)="nextPage()"
+          [disabled]="page() + 1 >= totalPages()"
+        >
+          Suivant →
+        </button>
+      </nav>
+    }
+  </div>
+</section>

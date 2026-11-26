@@ -1,0 +1,27 @@
+<article class="provider-card card" [class.selected]="selected()">
+  <div class="provider-top">
+    <span class="provider-avatar" aria-hidden="true">{{ initials() }}</span>
+    <div class="provider-identity">
+      <h3>{{ provider().name }}</h3>
+      <p>{{ provider().vehicle }}</p>
+    </div>
+    <span class="provider-rating">★ {{ provider().rating.toFixed(1) }}</span>
+  </div>
+
+  <div class="provider-meta">
+    <span><strong>{{ provider().distanceKm | number: '1.1-1' }} km</strong> de distance</span>
+    <span><strong>{{ provider().etaMinutes }} min</strong> estimées</span>
+    <span class="provider-phone">{{ provider().phone }}</span>
+  </div>
+
+  <button
+    class="btn provider-action"
+    [class.btn-primary]="!selected()"
+    [class.btn-secondary]="selected()"
+    type="button"
+    (click)="select.emit(provider())"
+    [disabled]="selected()"
+  >
+    {{ selected() ? '✓ Sélectionné' : 'Choisir ce dépanneur' }}
+  </button>
+</article>
