@@ -84,11 +84,89 @@ Documentation/                         # architecture, diagrammes (ex. ms<N>-cla
 | 8083 | Users service (dépôt `Mecanico-Users`) |
 | 8084 | API Gateway |
 | 8761 | Eureka |
+| 8180 | Keycloak (Docker) |
+| 3307 | MySQL (Docker) |
+| 27017 | MongoDB (Docker) |
+| 5672 / 15672 | RabbitMQ / interface web (Docker) |
 
 Un nouveau service prend le prochain port libre (`8085`, `8086`…) : l'ajouter dans ce tableau
 et dans le `README.md` dans la même PR.
 
-## 4. Pull Requests
+## 4. Infrastructure Docker
+
+L'infrastructure commune (MySQL, MongoDB, RabbitMQ, Keycloak, Eureka, API Gateway) est décrite
+dans `docker-compose.yml`. Personne n'a besoin d'installer ces outils sur sa machine : **Docker
+Desktop** (ou Docker Engine + Compose v2) suffit. Prévoir 8 Go de RAM pour la plateforme complète.
+
+### Configuration
+
+```bash
+cp .env.example .env     # facultatif : mots de passe, ports, limites mémoire
+```
+
+Ne jamais committer `.env`. Toute nouvelle variable est ajoutée à `.env.example` avec sa
+valeur par défaut, et `docker-compose.yml` l'utilise sous la forme `${VARIABLE:-défaut}`.
+
+### Profils : ne lancer que ce dont on a besoin
+
+| Commande | Ce qui démarre |
+|---|---|
+| `docker compose up -d` | Infrastructure commune uniquement |
+| `docker compose --profile ms1 up -d --build` | Infrastructure + MS1 |
+| `docker compose --profile ms1 --profile ms3 up -d --build` | Infrastructure + MS1 + MS3 |
+| `docker compose --profile all up -d --build` | Toute la plateforme + Front-end (démo) |
+| `docker compose ps` | État et santé (`healthy`) de chaque conteneur |
+| `docker compose logs -f <service>` | Logs d'un conteneur |
+| `docker compose --profile all down` | Arrêt (les données sont conservées) |
+| `docker compose --profile all down -v` | Arrêt **et suppression des bases** (rejoue l'init MySQL) |
+
+Pour éviter de répéter `--profile`, renseigner `COMPOSE_PROFILES=ms1` (par exemple) dans `.env`.
+
+Chaque conteneur a un *healthcheck* : les microservices attendent que MySQL, RabbitMQ et
+Eureka soient `healthy` avant de démarrer, et la Gateway attend Eureka et Keycloak.
+
+### Développer son microservice dans l'IDE
+
+1. Lancer l'infrastructure : `docker compose up -d`.
+2. Lancer son service depuis l'IDE avec ces variables d'environnement :
+
+   | Variable | Valeur |
+   |---|---|
+   | `DB_URL` | `jdbc:mysql://localhost:3307/mecanico_<nom>_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true` |
+   | `DB_USER` / `DB_PASSWORD` | `mecanico` / `mecanico` |
+   | `EUREKA_INSTANCE_HOSTNAME` | `host.docker.internal` |
+   | `EUREKA_INSTANCE_PREFER_IP_ADDRESS` | `false` |
+
+   Les deux dernières variables permettent à la Gateway (dans Docker) de joindre le service
+   lancé sur la machine hôte. Sans elles, appeler le service directement sur son port.
+3. Vérifier qu'il apparaît dans Eureka : http://localhost:8761.
+
+> MySQL écoute sur **3307** (et non 3306) pour ne pas entrer en conflit avec WAMP/XAMPP.
+
+### Ajouter son microservice à l'infrastructure (checklist)
+
+1. **Code** : `Backend/<nom>-service/` avec `spring-boot-starter-actuator`, le client Eureka,
+   et `/actuator/health` autorisé sans jeton dans la configuration de sécurité.
+2. **Configuration** : dans `application.yml`, lire les variables d'environnement avec une
+   valeur par défaut, pour que le service démarre aussi bien dans l'IDE que dans Docker :
+   `server.port: ${SERVER_PORT:<port>}`, `${DB_URL:...}`, `${EUREKA_URL:http://localhost:8761/eureka/}`,
+   `${KEYCLOAK_ISSUER_URI:...}`, `${KEYCLOAK_JWK_SET_URI:...}`, `${RABBITMQ_HOST:localhost}`.
+3. **Dockerfile** : copier celui d'un service existant (build Maven multi-étapes + JRE 21)
+   ainsi que son `.dockerignore`.
+4. **Base de données** :
+   - MySQL : nommer sa base `mecanico_<nom>_db` (l'utilisateur `mecanico` a déjà les droits
+     sur `mecanico_*`) et l'ajouter à la liste de `infra/mysql/init/01-create-databases.sh`.
+   - MongoDB (MS5) : `mongodb://mongodb:27017/mecanico_<nom>_db`.
+   - H2 : rien à faire.
+5. **docker-compose.yml** : copier le bloc *MODÈLE* commenté, avec son profil `ms<N>` et le
+   profil `all`. Ajouter son port dans `.env.example`.
+6. **Gateway** : ajouter sa route (et sa route `/<nom>-service/v3/api-docs`) dans
+   `Backend/api-gateway/src/main/resources/application.yml`.
+7. **Vérifier** : `docker compose --profile ms<N> up -d --build`, puis `docker compose ps`
+   (statut `healthy`), Eureka, et un appel via la Gateway (`http://localhost:8084/api/...`).
+8. **Documenter** : port dans le tableau ci-dessus et dans le `README.md`.
+
+## 5. Pull Requests
 
 - **Cible** : `main`. **Titre** : même format que les commits.
 - **Description** : ce qui a été fait, comment tester (URL, compte de démo, requête Swagger),
@@ -107,7 +185,7 @@ et dans le `README.md` dans la même PR.
 - [ ] Nouvelles variables, ports ou scripts SQL documentés dans le `README.md`
 - [ ] Aucun secret ni fichier généré committé
 
-## 5. Conflits
+## 6. Conflits
 
 En cas de conflit lors du `git merge origin/main` :
 
@@ -118,6 +196,6 @@ En cas de conflit lors du `git merge origin/main` :
 3. En cas de doute sur le code d'un autre membre : lui demander, ou laisser le mainteneur
    arbitrer dans la PR.
 
-## 6. Besoin d'aide ?
+## 7. Besoin d’aide ?
 
 Ouvrir une *Issue* GitHub ou mentionner le mainteneur (`@jelassiaymen94`) dans la PR.

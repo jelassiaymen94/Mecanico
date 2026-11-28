@@ -135,6 +135,30 @@ Les scripts créent les tables, le catalogue véhicules et un jeu de données de
 
 ## Lancement
 
+### Avec Docker (recommandé)
+
+Prérequis : **Docker Desktop** (ou Docker Engine + Compose v2), 8 Go de RAM.
+
+```bash
+cp .env.example .env                          # facultatif : mots de passe, ports, mémoire
+docker compose --profile all up -d --build    # toute la plateforme
+docker compose ps                             # attendre l'état "healthy"
+```
+
+| URL | Service |
+|---|---|
+| http://localhost:4201 | Front-end Angular |
+| http://localhost:8084 | API Gateway (point d'entrée unique des API) |
+| http://localhost:8761 | Eureka (services enregistrés) |
+| http://localhost:8180 | Keycloak (realm `mecanico`, console `admin` / `admin`) |
+| http://localhost:15672 | RabbitMQ (`guest` / `guest`) |
+
+Pour ne lancer que l'infrastructure commune (et développer son microservice dans l'IDE) :
+`docker compose up -d`. Profils, ajout d'un service et dépannage : voir
+[CONTRIBUTING.md § 4](CONTRIBUTING.md#4-infrastructure-docker).
+
+### Sans Docker
+
 Prérequis : **JDK 21+**, **Maven 3.9+**, **Node.js 22+**, **npm 11+**, MySQL (WAMP).
 
 ### 1. Users service — port 8083
