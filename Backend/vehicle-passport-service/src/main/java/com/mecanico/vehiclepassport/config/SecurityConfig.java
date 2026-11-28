@@ -1,6 +1,6 @@
 package com.mecanico.vehiclepassport.config;
 
-import com.mecanico.vehiclepassport.security.JwtAuthenticationFilter;
+import com.mecanico.vehiclepassport.security.KeycloakJwtConverter;
 import com.mecanico.vehiclepassport.security.RestSecurityHandlers;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -12,7 +12,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -24,14 +23,12 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RestSecurityHandlers securityHandlers;
 
     @Value("${mecanico.cors.allowed-origins}")
     private String allowedOrigins;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, RestSecurityHandlers securityHandlers) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    public SecurityConfig(RestSecurityHandlers securityHandlers) {
         this.securityHandlers = securityHandlers;
     }
 
@@ -50,7 +47,10 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/info", "/error").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .oauth2ResourceServer(oauth -> oauth
+                        .authenticationEntryPoint(securityHandlers)
+                        .accessDeniedHandler(securityHandlers)
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(new KeycloakJwtConverter())));
         return http.build();
     }
 

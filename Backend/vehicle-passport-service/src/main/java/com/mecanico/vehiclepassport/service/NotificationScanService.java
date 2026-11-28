@@ -9,6 +9,8 @@ import com.mecanico.vehiclepassport.entity.ReminderStatus;
 import com.mecanico.vehiclepassport.entity.ServiceReminder;
 import com.mecanico.vehiclepassport.entity.Vehicle;
 import com.mecanico.vehiclepassport.entity.VehicleDocument;
+import com.mecanico.vehiclepassport.messaging.Events;
+import com.mecanico.vehiclepassport.messaging.PassportEventPublisher;
 import com.mecanico.vehiclepassport.repository.NotificationLogRepository;
 import com.mecanico.vehiclepassport.repository.ServiceReminderRepository;
 import com.mecanico.vehiclepassport.repository.VehicleDocumentRepository;
@@ -26,8 +28,8 @@ import java.util.List;
 
 /**
  * Daily cron: detects documents expiring in 30 / 7 days and service reminders
- * that are due or overdue. In this first version events are persisted as
- * in-app notifications; publishing them to RabbitMQ is the next integration step.
+ * that are due or overdue. Events are persisted as in-app notifications and
+ * documents expiring are also published on RabbitMQ ({@code document.expiring}).
  */
 @Service
 public class NotificationScanService {
@@ -37,13 +39,16 @@ public class NotificationScanService {
     private final VehicleDocumentRepository documents;
     private final ServiceReminderRepository reminders;
     private final NotificationLogRepository notifications;
+    private final PassportEventPublisher eventPublisher;
 
     @Value("${mecanico.scheduler.enabled:true}")
     private boolean schedulerEnabled;
 
     public NotificationScanService(VehicleDocumentRepository documents,
                                    ServiceReminderRepository reminders,
-                                   NotificationLogRepository notifications) {
+                                   NotificationLogRepository notifications,
+                                   PassportEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
         this.documents = documents;
         this.reminders = reminders;
         this.notifications = notifications;
@@ -119,6 +124,12 @@ public class NotificationScanService {
         entry.setChannel(NotificationChannel.IN_APP);
         entry.setStatus(NotificationStatus.SENT);
         notifications.save(entry);
+
+        Vehicle vehicle = document.getVehicle();
+        eventPublisher.documentExpiring(new Events.DocumentExpiringEvent(
+                vehicle.getId(), vehicle.getOwnerId(), vehicle.getPlate(),
+                document.getId(), String.valueOf(document.getType()), document.getNumber(),
+                document.getExpiryDate(), days, LocalDateTime.now()));
     }
 
     private void createReminderNotification(ServiceReminder reminder, Vehicle vehicle,

@@ -20,6 +20,8 @@ public interface MaintenanceRecordRepository extends JpaRepository<MaintenanceRe
 
     long countByVehicleId(Long vehicleId);
 
+    boolean existsByRequestId(Long requestId);
+
     @Query("select coalesce(sum(m.cost), 0) from MaintenanceRecord m where m.vehicle.id = :vehicleId")
     BigDecimal totalCostByVehicleId(@Param("vehicleId") Long vehicleId);
 
