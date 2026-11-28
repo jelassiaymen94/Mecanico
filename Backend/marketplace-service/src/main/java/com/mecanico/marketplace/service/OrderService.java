@@ -9,6 +9,8 @@ import com.mecanico.marketplace.entity.Order;
 import com.mecanico.marketplace.entity.OrderStatus;
 import com.mecanico.marketplace.exception.ConflictException;
 import com.mecanico.marketplace.exception.ResourceNotFoundException;
+import com.mecanico.marketplace.messaging.MarketplaceEventPublisher;
+import com.mecanico.marketplace.messaging.MarketplaceEvents;
 import com.mecanico.marketplace.repository.ListingRepository;
 import com.mecanico.marketplace.repository.OrderRepository;
 import org.springframework.data.domain.Page;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 
 @Service
 @Transactional
@@ -26,10 +29,14 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ListingRepository listingRepository;
+    private final MarketplaceEventPublisher eventPublisher;
 
-    public OrderService(OrderRepository orderRepository, ListingRepository listingRepository) {
+    public OrderService(OrderRepository orderRepository,
+                        ListingRepository listingRepository,
+                        MarketplaceEventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
         this.listingRepository = listingRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public OrderResponse create(OrderCreateRequest request) {
@@ -82,13 +89,26 @@ public class OrderService {
         order.setBuyerType(request.buyerType());
         order.setQuantity(request.quantity());
         order.setTotalPrice(computeTotalPrice(order.getListing(), request.quantity()));
+        OrderStatus previousStatus = order.getStatus();
         order.setStatus(request.status());
-        return OrderResponse.from(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+        if (previousStatus != OrderStatus.CONFIRMED && saved.getStatus() == OrderStatus.CONFIRMED) {
+            publishOrderConfirmed(saved);
+        }
+        return OrderResponse.from(saved);
     }
 
     public void delete(Long id) {
         Order order = findById(id);
         orderRepository.delete(order);
+    }
+
+    private void publishOrderConfirmed(Order order) {
+        Listing listing = order.getListing();
+        eventPublisher.orderConfirmed(new MarketplaceEvents.OrderConfirmedEvent(
+                order.getId(), listing.getId(), listing.getTitle(), listing.getSellerId(),
+                order.getBuyerId(), String.valueOf(order.getBuyerType()), order.getQuantity(),
+                order.getTotalPrice(), "TND", LocalDateTime.now()));
     }
 
     private Order findById(Long id) {

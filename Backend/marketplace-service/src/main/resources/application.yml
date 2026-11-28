@@ -1,6 +1,6 @@
 spring:
   application:
-    name: marketplace-service
+    name: mecanico-marketplace-service
   datasource:
     url: ${MARKETPLACE_DB_URL:jdbc:mysql://localhost:3306/mecanico_marketplace_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
     username: ${MARKETPLACE_DB_USERNAME:root}
@@ -16,6 +16,17 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/mecanico}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/mecanico/protocol/openid-connect/certs}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
 
 server:
   port: ${SERVER_PORT:8081}
@@ -29,6 +40,14 @@ app:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
 
 management:
   endpoints:

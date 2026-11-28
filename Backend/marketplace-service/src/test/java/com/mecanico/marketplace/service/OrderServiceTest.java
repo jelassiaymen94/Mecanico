@@ -39,6 +39,9 @@ class OrderServiceTest {
     @Mock
     private ListingRepository listingRepository;
 
+    @Mock
+    private com.mecanico.marketplace.messaging.MarketplaceEventPublisher eventPublisher;
+
     @InjectMocks
     private OrderService orderService;
 

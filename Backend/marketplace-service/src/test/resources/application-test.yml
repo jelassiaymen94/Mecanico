@@ -13,3 +13,11 @@ spring:
 
 server:
   port: 0
+
+eureka:
+  client:
+    enabled: false
+
+mecanico:
+  security:
+    enabled: false
