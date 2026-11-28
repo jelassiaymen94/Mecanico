@@ -1,26 +1,132 @@
 server:
-  # 8080 is reserved by Oracle TNSLSNR on this machine; 8084 is free.
-  port: 8084
+  # 8080 is reserved by Oracle TNSLSNR on the dev machine; 8084 is free.
+  port: ${SERVER_PORT:8084}
 
 spring:
   application:
     name: mecanico-api-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Tokens are issued for the public Keycloak URL (browser side)...
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/mecanico}
+          # ...but keys may be fetched through the internal Docker network.
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/mecanico/protocol/openid-connect/certs}
   cloud:
     gateway:
       server:
         webflux:
+          default-filters:
+            # Services also add CORS headers: keep a single copy.
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
           routes:
-            # Users service: auth, profiles, addresses, admin user management, internal lookup
-            - id: mecanico-user-service
-              uri: lb://mecanico-user-service
-              predicates:
-                - Path=/api/auth/**,/api/users/**,/api/admin/users,/api/admin/users/**,/api/internal/**
-
-            # Vehicle Passport service: vehicles, catalog, dashboard, notifications, admin scan
-            - id: mecanico-vehicle-passport-service
+            # MS1 - Vehicle Passport (MySQL)
+            - id: vehicle-passport-service
               uri: lb://mecanico-vehicle-passport-service
               predicates:
                 - Path=/api/admin/scan,/api/catalog/**,/api/vehicles/**,/api/dashboard/**,/api/notifications/**,/api/me/**
+              filters:
+                - name: CircuitBreaker
+                  args: { name: vehiclePassport, fallbackUri: "forward:/fallback/vehicle-passport-service" }
+
+            # MS2 - Request (H2)
+            - id: request-service
+              uri: lb://mecanico-request-service
+              predicates:
+                - Path=/api/requests/**
+              filters:
+                - name: CircuitBreaker
+                  args: { name: request, fallbackUri: "forward:/fallback/request-service" }
+
+            # MS3 - Parts Marketplace (MySQL)
+            - id: marketplace-service
+              uri: lb://mecanico-marketplace-service
+              predicates:
+                - Path=/api/v1/listings/**,/api/v1/orders/**,/api/v1/sellers/**
+              filters:
+                - name: CircuitBreaker
+                  args: { name: marketplace, fallbackUri: "forward:/fallback/marketplace-service" }
+
+            # MS4 - Provider (MySQL)
+            - id: provider-service
+              uri: lb://mecanico-provider-service
+              predicates:
+                - Path=/api/providers/**
+              filters:
+                - name: CircuitBreaker
+                  args: { name: provider, fallbackUri: "forward:/fallback/provider-service" }
+
+            # MS5 - Review & Rating (MongoDB)
+            - id: review-service
+              uri: lb://mecanico-review-service
+              predicates:
+                - Path=/api/reviews/**
+              filters:
+                - name: CircuitBreaker
+                  args: { name: review, fallbackUri: "forward:/fallback/review-service" }
+
+            # MS6 - Billing & Payment (H2)
+            - id: billing-service
+              uri: lb://mecanico-billing-service
+              predicates:
+                - Path=/api/billing/**
+              filters:
+                - name: CircuitBreaker
+                  args: { name: billing, fallbackUri: "forward:/fallback/billing-service" }
+
+            # MS7 - AI Recommendation (MySQL)
+            - id: ai-recommendation-service
+              uri: lb://mecanico-ai-service
+              predicates:
+                - Path=/api/ai/**
+              filters:
+                - name: CircuitBreaker
+                  args: { name: ai, fallbackUri: "forward:/fallback/ai-service" }
+
+            # OpenAPI documents of each service, exposed as /<service>/v3/api-docs
+            - id: openapi-docs
+              uri: lb://mecanico-vehicle-passport-service
+              predicates:
+                - Path=/vehicle-passport-service/v3/api-docs
+              filters:
+                - RewritePath=/vehicle-passport-service/(?<path>.*), /$\{path}
+            - id: openapi-request
+              uri: lb://mecanico-request-service
+              predicates:
+                - Path=/request-service/v3/api-docs
+              filters:
+                - RewritePath=/request-service/(?<path>.*), /$\{path}
+            - id: openapi-marketplace
+              uri: lb://mecanico-marketplace-service
+              predicates:
+                - Path=/marketplace-service/v3/api-docs
+              filters:
+                - RewritePath=/marketplace-service/(?<path>.*), /$\{path}
+            - id: openapi-provider
+              uri: lb://mecanico-provider-service
+              predicates:
+                - Path=/provider-service/v3/api-docs
+              filters:
+                - RewritePath=/provider-service/(?<path>.*), /$\{path}
+            - id: openapi-review
+              uri: lb://mecanico-review-service
+              predicates:
+                - Path=/review-service/v3/api-docs
+              filters:
+                - RewritePath=/review-service/(?<path>.*), /$\{path}
+            - id: openapi-billing
+              uri: lb://mecanico-billing-service
+              predicates:
+                - Path=/billing-service/v3/api-docs
+              filters:
+                - RewritePath=/billing-service/(?<path>.*), /$\{path}
+            - id: openapi-ai
+              uri: lb://mecanico-ai-service
+              predicates:
+                - Path=/ai-service/v3/api-docs
+              filters:
+                - RewritePath=/ai-service/(?<path>.*), /$\{path}
 
           globalcors:
             add-to-simple-url-handler-mapping: true
@@ -34,6 +140,19 @@ spring:
                 allowedMethods: "*"
                 allowedHeaders: "*"
                 allowCredentials: true
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 10s
 
 eureka:
   client:
