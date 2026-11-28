@@ -22,6 +22,20 @@ export interface OrderCreateRequest {
   quantity: number;
 }
 
+export interface OrderUpdateRequest {
+  buyerType: BuyerType;
+  quantity: number;
+  status: OrderStatus;
+}
+
+export interface OrderQuery {
+  buyerId?: string;
+  listingId?: number;
+  status?: OrderStatus;
+  page?: number;
+  size?: number;
+}
+
 export const BUYER_TYPE_OPTIONS: ReadonlyArray<{ value: BuyerType; label: string }> = [
   { value: 'INDIVIDUAL', label: 'Particulier' },
   { value: 'PROFESSIONAL', label: 'Professionnel' },
